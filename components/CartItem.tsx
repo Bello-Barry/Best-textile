@@ -1,30 +1,13 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useCartStore } from "@/store/cartStore";
 
-export default function CartItem({
-  item,
-  onRemove,
-  onUpdateQuantity,
-}: {
-  item: any;
-  onRemove: () => void;
-  onUpdateQuantity: (quantity: number) => void;
-}) {
-  const [isRemoving, setIsRemoving] = useState(false);
-
-  const handleRemove = () => {
-    setIsRemoving(true);
-    setTimeout(() => {
-      onRemove();
-    }, 300); // Durée de l'animation
-  };
+export default function CartItem({ item }: { item: any }) {
+  const { removeFromCart, updateQuantity } = useCartStore();
 
   return (
-    <div
-      className={`border-b py-4 ${
-        isRemoving ? "opacity-0 transition-opacity duration-300" : ""
-      }`}
-    >
+    <div className="border-b py-4">
       <h2 className="text-xl font-semibold">{item.name}</h2>
       <p>Prix total: {item.price.toFixed(2)} €</p>
       <div className="flex items-center gap-2">
@@ -32,11 +15,11 @@ export default function CartItem({
         <input
           type="number"
           value={item.quantity}
-          onChange={(e) => onUpdateQuantity(parseFloat(e.target.value))}
+          onChange={(e) => updateQuantity(item.id, parseFloat(e.target.value))}
           className="w-16 border rounded px-2"
         />
       </div>
-      <Button variant="destructive" onClick={handleRemove}>
+      <Button variant="destructive" onClick={() => removeFromCart(item.id)}>
         Supprimer
       </Button>
     </div>

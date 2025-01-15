@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/hooks/useCart";
+import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
 import { ShoppingCart } from "lucide-react";
 import {
   DropdownMenu,
@@ -13,8 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Header() {
-  const { user, logout } = useAuth();
-  const { cartItems } = useCart();
+  const { user, logout, fetchUser } = useAuthStore();
+  const { cartItems } = useCartStore();
+
+  // Récupérer l'utilisateur au chargement du composant
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   return (
     <header className="bg-white shadow">
