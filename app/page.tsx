@@ -1,25 +1,33 @@
-// app/page.tsx
-import { ProductGrid } from "@/components/products/product-grid";
-import { Hero } from "@/components/home/hero";
-import { FeaturedCategories } from "@/components/home/featured-categories";
-import { Testimonials } from "@/components/home/testimonials";
-import Link from "next/link";
+"use client";
 
-export default async function HomePage() {
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import ProductCard from "@/components/ProductCard";
+
+export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) {
+        console.error(error);
+      } else {
+        setProducts(data);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   return (
-    <div className="space-y-12 pb-12">
-      <Hero />
-      <FeaturedCategories />
-      <section className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Produits Populaires</h2>
-          <Link href="/products" className="text-primary hover:underline">
-            Voir tous les produits
-          </Link>
-        </div>
-        <ProductGrid featured={true} />
-      </section>
-      <Testimonials />
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Nos Tissus</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
     </div>
   );
 }
