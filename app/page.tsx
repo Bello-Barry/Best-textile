@@ -1,25 +1,7 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import ProductCard from "@/components/ProductCard";
 
-export default function Home() {
-  const [products, setProducts] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase.from("products").select("*");
-      if (error) {
-        console.error(error);
-      } else {
-        setProducts(data);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
+export default function Home({ products }: { products: any[] }) {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Nos Tissus</h1>
@@ -30,4 +12,23 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+export async function getServerSideProps() {
+  const { data, error } = await supabase.from("products").select("*");
+
+  if (error) {
+    console.error(error);
+    return {
+      props: {
+        products: [],
+      },
+    };
+  }
+
+  return {
+    props: {
+      products: data,
+    },
+  };
 }

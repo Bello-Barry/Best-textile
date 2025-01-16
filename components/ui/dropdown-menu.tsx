@@ -43,4 +43,3 @@ export {
   DropdownMenuContent,
   DropdownMenuItem,
 };
-@radix-ui/react-dropdown-menu
