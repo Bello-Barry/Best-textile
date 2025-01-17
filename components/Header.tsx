@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect } from "react";
 
 export default function Header() {
   const { user, logout, fetchUser } = useAuthStore();
@@ -54,7 +55,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Link href="/auth/login">
+              <Link href="/auth/logins">
                 <Button variant="outline">Connexion</Button>
               </Link>
               <Link href="/auth/register">
