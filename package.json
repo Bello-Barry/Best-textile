@@ -16,6 +16,7 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@shadcn/ui": "^0.0.4",
     "@supabase/supabase-js": "^2.47.12",
+    "@uploadcare/react-widget": "^2.4.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.1",

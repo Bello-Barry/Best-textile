@@ -8,7 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, Building } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Schémas de validation
@@ -347,24 +353,29 @@ const AuthPage = () => {
                             </p>
                           )}
                         </div>
+<div className="relative">
+  <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+  <Select
+    defaultValue={registerData.role}
+    onValueChange={(value: "client" | "admin") =>
+      setRegisterData({ ...registerData, role: value })
+    }
+  >
+    <SelectTrigger className="pl-10">
+      <SelectValue placeholder="Sélectionnez un rôle" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="client">Client</SelectItem>
+      <SelectItem value="admin">Administrateur</SelectItem>
+    </SelectContent>
+  </Select>
+  {validationErrors.role && (
+    <p className="text-red-500 text-sm mt-1">
+      {validationErrors.role}
+    </p>
+  )}
+</div>
 
-                        <div className="relative">
-                          <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Select
-                            value={registerData.role}
-                            onValueChange={(value: "client" | "admin") =>
-                              setRegisterData({ ...registerData, role: value })
-                            }
-                          >
-                            <option value="client">Client</option>
-                            <option value="admin">Administrateur</option>
-                          </Select>
-                          {validationErrors.role && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.role}
-                            </p>
-                          )}
-                        </div>
 
                         <div className="relative">
                           <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
