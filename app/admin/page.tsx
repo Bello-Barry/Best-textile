@@ -1,135 +1,375 @@
 "use client";
-
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  TrendingUp,
+  Plus,
+  Search,
+  Edit,
+  Eye,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-toastify";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export default function AdminPage() {
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  type: string;
+}
+
+interface Order {
+  id: string;
+  created_at: string;
+  status: string;
+  total: number;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon: Icon,
+  description,
+}) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </CardContent>
+  </Card>
+);
+
+const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
   const router = useRouter();
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
-  // Rediriger si l'utilisateur n'est pas un administrateur
   useEffect(() => {
     if (!user || user.role !== "admin") {
       router.push("/");
+      toast.error("Accès non autorisé");
     }
   }, [user, router]);
 
-  // Charger les produits, commandes et clients
   useEffect(() => {
     const fetchData = async () => {
-      const { data: products, error: productsError } = await supabase
-        .from("products")
-        .select("*");
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select("*");
-      const { data: clients, error: clientsError } = await supabase
-        .from("profiles")
-        .select("*");
+      try {
+        const [productsData, ordersData, clientsData] = await Promise.all([
+          supabase.from("products").select("*"),
+          supabase.from("orders").select("*"),
+          supabase.from("profiles").select("*"),
+        ]);
 
-      if (productsError || ordersError || clientsError) {
-        toast.error("Erreur lors du chargement des données.");
-      } else {
-        setProducts(products || []);
-        setOrders(orders || []);
-        setClients(clients || []);
+        setProducts(productsData.data || []);
+        setOrders(ordersData.data || []);
+        setClients(clientsData.data || []);
+      } catch (error) {
+        toast.error("Erreur lors du chargement des données");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, []);
 
-  if (!user || user.role !== "admin") {
-    return null; // Ou un message de chargement
+  if (!user || user.role !== "admin") return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
+  const filteredOrders = orders.filter(
+    (order) => orderStatusFilter === "all" || order.status === orderStatusFilter
+  );
+
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const averageOrderValue =
+    orders.length > 0 ? totalRevenue / orders.length : 0;
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Espace Administrateur</h1>
-      <p>Bienvenue, {user.name} !</p>
-
-      {/* Section Gestion des Produits */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Gestion des Produits</h2>
+    <div className="container mx-auto p-4 space-y-8">
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard Admin</h1>
+          <p className="text-muted-foreground">
+            Bienvenue, {user?.name} ! Voici un aperçu de votre boutique.
+          </p>
+        </div>
         <Link href="/admin/products/new">
-          <Button>Ajouter un produit</Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouveau Produit
+          </Button>
         </Link>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {products.map((product) => (
-            <div key={product.id} className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold">{product.name}</h3>
-              <p>{product.description}</p>
-              <p>Prix: {product.price} €/mètre</p>
-              <Link href={`/admin/products/${product.id}`}>
-                <Button variant="outline" className="mt-2">
-                  Modifier
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Section Gestion des Commandes */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Gestion des Commandes</h2>
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div key={order.id} className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold">Commande #{order.id}</h3>
-              <p>Statut: {order.status}</p>
-              <p>Total: {order.total} €</p>
-              <Link href={`/admin/orders/${order.id}`}>
-                <Button variant="outline" className="mt-2">
-                  Voir les détails
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Revenus Totaux"
+          value={`${totalRevenue.toFixed(2)} €`}
+          icon={TrendingUp}
+          description="Revenus totaux depuis le début"
+        />
+        <StatCard
+          title="Commandes"
+          value={orders.length}
+          icon={ShoppingCart}
+          description="Nombre total de commandes"
+        />
+        <StatCard
+          title="Clients"
+          value={clients.length}
+          icon={Users}
+          description="Clients enregistrés"
+        />
+        <StatCard
+          title="Panier Moyen"
+          value={`${averageOrderValue.toFixed(2)} €`}
+          icon={Package}
+          description="Valeur moyenne des commandes"
+        />
       </div>
 
-      {/* Section Gestion des Clients */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Gestion des Clients</h2>
-        <div className="space-y-4">
-          {clients.map((client) => (
-            <div key={client.id} className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold">{client.name}</h3>
-              <p>{client.email}</p>
-              <p>Rôle: {client.role}</p>
-              <Link href={`/admin/clients/${client.id}`}>
-                <Button variant="outline" className="mt-2">
-                  Voir les détails
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Tabs defaultValue="products" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="products">Produits</TabsTrigger>
+          <TabsTrigger value="orders">Commandes</TabsTrigger>
+          <TabsTrigger value="clients">Clients</TabsTrigger>
+        </TabsList>
 
-      {/* Section Statistiques */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Statistiques</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold">Ventes totales</h3>
-            <p>{orders.reduce((sum, order) => sum + order.total, 0)} €</p>
-          </div>
-          <div className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold">Nombre de clients</h3>
-            <p>{clients.length}</p>
-          </div>
-        </div>
-      </div>
+        <TabsContent value="products">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des Produits</CardTitle>
+              <CardDescription>
+                Gérez votre catalogue de produits
+              </CardDescription>
+              <div className="flex items-center space-x-2">
+                <div className="relative flex-grow">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Rechercher un produit..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Prix</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        {product.name}
+                      </TableCell>
+                      <TableCell>{product.price} €/m</TableCell>
+                      <TableCell>{product.stock}</TableCell>
+                      <TableCell className="capitalize">
+                        {product.type}
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/admin/products/${product.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des Commandes</CardTitle>
+              <CardDescription>
+                Suivez et gérez les commandes de vos clients
+              </CardDescription>
+              <Select
+                value={orderStatusFilter}
+                onValueChange={setOrderStatusFilter}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="pending">En attente</SelectItem>
+                  <SelectItem value="processing">En traitement</SelectItem>
+                  <SelectItem value="completed">Terminée</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>#{order.id}</TableCell>
+                      <TableCell>
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            order.status === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : order.status === "processing"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{order.total} €</TableCell>
+                      <TableCell>
+                        <Link href={`/admin/orders/${order.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="clients">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des Clients</CardTitle>
+              <CardDescription>
+                Consultez les informations de vos clients
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell className="font-medium">
+                        {client.name}
+                      </TableCell>
+                      <TableCell>{client.email}</TableCell>
+                      <TableCell className="capitalize">
+                        {client.role}
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/admin/clients/${client.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
+
+export default AdminPage;

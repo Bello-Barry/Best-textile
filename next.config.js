@@ -1,8 +1,21 @@
-/** @type {import('next').NextConfig} */
+// next.config.js
 const nextConfig = {
   images: {
-    domains: ["ucarecdn.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ucarecdn.com",
+        port: "",
+        pathname: "/**",
+      },
+    ],
   },
+  experimental: {
+    esmExternals: true, // Active le support des modules ECMAScript
+  },
+  reactStrictMode: true,
 };
 
-module.exports = nextConfig;
+// next.config.mjs
+
+export default nextConfig;
