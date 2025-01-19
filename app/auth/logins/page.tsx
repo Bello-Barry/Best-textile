@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, Building } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import {
   Select,
   SelectContent,
@@ -151,6 +154,18 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -353,29 +368,31 @@ const AuthPage = () => {
                             </p>
                           )}
                         </div>
-<div className="relative">
-  <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-  <Select
-    defaultValue={registerData.role}
-    onValueChange={(value: "client" | "admin") =>
-      setRegisterData({ ...registerData, role: value })
-    }
-  >
-    <SelectTrigger className="pl-10">
-      <SelectValue placeholder="Sélectionnez un rôle" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="client">Client</SelectItem>
-      <SelectItem value="admin">Administrateur</SelectItem>
-    </SelectContent>
-  </Select>
-  {validationErrors.role && (
-    <p className="text-red-500 text-sm mt-1">
-      {validationErrors.role}
-    </p>
-  )}
-</div>
 
+                        <div className="relative">
+                          <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Select
+                            defaultValue={registerData.role}
+                            onValueChange={(value: "client" | "admin") =>
+                              setRegisterData({ ...registerData, role: value })
+                            }
+                          >
+                            <SelectTrigger className="pl-10">
+                              <SelectValue placeholder="Sélectionnez un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="client">Client</SelectItem>
+                              <SelectItem value="admin">
+                                Administrateur
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {validationErrors.role && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {validationErrors.role}
+                            </p>
+                          )}
+                        </div>
 
                         <div className="relative">
                           <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
