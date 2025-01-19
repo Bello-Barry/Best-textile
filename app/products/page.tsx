@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { useCart } from "@/context/CartContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,27 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  Filter,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-const ProductCard = ({ product }) => {
+// Define the types for the product and the props
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  images: string[];
+  type: string;
+  subtype?: string;
+}
+
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -128,7 +143,9 @@ const ProductCard = ({ product }) => {
               min="1"
               max={product.stock}
               value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setQuantity(Number(e.target.value))
+              }
               className="w-20"
             />
             <span className="text-sm text-gray-500">mètre(s)</span>
@@ -148,8 +165,8 @@ const ProductCard = ({ product }) => {
   );
 };
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
+const ProductsPage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
@@ -160,10 +177,10 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase.from("products").select("*");
+      const { data, error } = await supabase.from<Product>("products").select("*");
 
       if (error) throw error;
-      setProducts(data);
+      setProducts(data || []);
     } catch (error) {
       toast.error("Erreur lors du chargement des produits");
       console.error(error);
@@ -201,7 +218,7 @@ export default function ProductsPage() {
               <SelectValue placeholder="Filtrer par type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les types</SelectItem>
+              <SelectItem value="all">Tous les types</SelectItem>
               <SelectItem value="soie">Soie</SelectItem>
               <SelectItem value="bazin">Bazin</SelectItem>
               <SelectItem value="autre">Autre</SelectItem>
@@ -224,3 +241,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+export default ProductsPage;
