@@ -1,21 +1,20 @@
-// next.config.js
+// next.config.mjs
+
 const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "ucarecdn.com",
+        hostname: "*.supabase.co", // Pour les images stockées sur Supabase
         port: "",
         pathname: "/**",
       },
     ],
   },
   experimental: {
-    esmExternals: true, // Active le support des modules ECMAScript
+    esmExternals: true,
   },
   reactStrictMode: true,
 };
-
-// next.config.mjs
 
 export default nextConfig;
