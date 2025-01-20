@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import ImageUploader from "@/components/ImageUploader"; // Importez votre nouveau composant
+import ImageUploader from "@/components/ImageUploader";
 
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -61,10 +61,10 @@ export default function NewProductPage() {
     defaultValues: {
       name: "",
       description: "",
-      price: 0,
+      price: undefined,
       type: "soie",
       subtype: "",
-      stock: 0,
+      stock: undefined,
       images: [],
     },
   });
@@ -139,10 +139,10 @@ export default function NewProductPage() {
                         <Input
                           type="number"
                           step="0.01"
-                          value={isNaN(field.value) ? 0 : field.value} // Affiche 0 si NaN
+                          value={field.value || ""}
                           onChange={(e) => {
                             const value = e.target.valueAsNumber;
-                            field.onChange(isNaN(value) ? 0 : value); // Remplace NaN par 0
+                            field.onChange(value);
                           }}
                         />
                       </FormControl>
@@ -160,10 +160,10 @@ export default function NewProductPage() {
                       <FormControl>
                         <Input
                           type="number"
-                          value={isNaN(field.value) ? 0 : field.value} // Affiche 0 si NaN
+                          value={field.value || ""}
                           onChange={(e) => {
                             const value = e.target.valueAsNumber;
-                            field.onChange(isNaN(value) ? 0 : value); // Remplace NaN par 0
+                            field.onChange(value);
                           }}
                         />
                       </FormControl>
