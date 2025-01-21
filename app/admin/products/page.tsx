@@ -74,6 +74,11 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
+      // Vérifie d'abord la connexion Supabase
+      if (!supabase) {
+        throw new Error("La connexion à la base de données n'est pas établie");
+      }
+
       let query = supabase
         .from("products")
         .select("*")
@@ -85,43 +90,81 @@ export default function AdminProductsPage() {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (error) {
+        console.error("Erreur Supabase détaillée:", error);
+        throw new Error(
+          error.message || "Erreur lors de la récupération des produits"
+        );
+      }
+
+      if (!data) {
+        throw new Error("Aucune donnée reçue de la base de données");
+      }
+
+      setProducts(data);
     } catch (error) {
-      console.error("Erreur lors du chargement des produits:", error);
-      toast.error("Erreur lors du chargement des produits.");
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur détaillée lors du chargement des produits:", error);
+      toast.error(`Erreur lors du chargement des produits: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // Cette fonction useEffect doit être modifiée pour gérer les dépendances correctement
   useEffect(() => {
+    const controller = new AbortController();
+
     fetchProducts();
-  }, [filterType, sortField, sortDirection]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [filterType, sortField, sortDirection]); // Ajouter les dépendances explicitement
 
   const handleDelete = async (id: string) => {
     try {
       const productToDelete = products.find((p) => p.id === id);
 
+      if (!productToDelete) {
+        throw new Error("Produit non trouvé");
+      }
+
       // Supprimer les images du storage
-      if (productToDelete?.images?.length) {
+      if (productToDelete.images?.length) {
         for (const imageUrl of productToDelete.images) {
           const imagePath = imageUrl.split("/").pop();
           if (imagePath) {
-            await supabase.storage.from("products").remove([imagePath]);
+            const { error: storageError } = await supabase.storage
+              .from("images") // Utiliser "images" au lieu de "products"
+              .remove([imagePath]);
+
+            if (storageError) {
+              console.error(
+                "Erreur lors de la suppression de l'image:",
+                storageError
+              );
+            }
           }
         }
       }
 
       // Supprimer le produit de la base de données
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      const { error: deleteError } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) throw deleteError;
 
       setProducts(products.filter((product) => product.id !== id));
       toast.success("Produit supprimé avec succès.");
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur inconnue";
       console.error("Erreur lors de la suppression:", error);
-      toast.error("Erreur lors de la suppression du produit.");
+      toast.error(`Erreur lors de la suppression du produit: ${errorMessage}`);
     }
   };
 

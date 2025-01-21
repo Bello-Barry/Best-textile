@@ -26,7 +26,8 @@ export default function ImageUploader({
     const files = event.target.files;
     if (!files) return;
 
-    if (files.length > maxFiles) {
+    // Vérifier si l'ajout de nouveaux fichiers dépasserait la limite
+    if (imageUrls.length + files.length > maxFiles) {
       toast.error(`Vous ne pouvez télécharger que ${maxFiles} images maximum`);
       return;
     }
@@ -36,25 +37,21 @@ export default function ImageUploader({
 
     try {
       for (const file of files) {
-        // Vérification du type de fichier
         if (!file.type.startsWith("image/")) {
           toast.error(`${file.name} n'est pas une image`);
           continue;
         }
 
-        // Vérification de la taille (5MB max)
         if (file.size > 5 * 1024 * 1024) {
           toast.error(`${file.name} est trop volumineux (max 5MB)`);
           continue;
         }
 
-        // Création d'un nom de fichier unique
         const fileExt = file.name.split(".").pop();
         const fileName = `${Math.random()
           .toString(36)
           .substring(2)}-${Date.now()}.${fileExt}`;
 
-        // Upload vers Supabase Storage
         const { data, error } = await supabase.storage
           .from(bucket)
           .upload(fileName, file, {
@@ -68,7 +65,6 @@ export default function ImageUploader({
           continue;
         }
 
-        // Récupération de l'URL publique
         const {
           data: { publicUrl },
         } = supabase.storage.from(bucket).getPublicUrl(data.path);
@@ -77,8 +73,9 @@ export default function ImageUploader({
       }
 
       if (newUrls.length > 0) {
-        setImageUrls((prevUrls) => [...prevUrls, ...newUrls]);
-        onUpload(newUrls);
+        const updatedUrls = [...imageUrls, ...newUrls];
+        setImageUrls(updatedUrls);
+        onUpload(updatedUrls); // Envoyer toutes les URLs, pas seulement les nouvelles
         toast.success("Images téléchargées avec succès");
       }
     } catch (error) {
@@ -86,6 +83,10 @@ export default function ImageUploader({
       toast.error("Une erreur est survenue lors du téléchargement");
     } finally {
       setIsUploading(false);
+      // Réinitialiser l'input file
+      if (event.target) {
+        event.target.value = "";
+      }
     }
   };
 
@@ -99,10 +100,10 @@ export default function ImageUploader({
 
       if (error) throw error;
 
-      // Mise à jour de l'état local
-      const newUrls = imageUrls.filter((url) => url !== urlToDelete);
-      setImageUrls(newUrls);
-      onUpload(newUrls);
+      // Mise à jour de l'état local avec toutes les URLs restantes
+      const updatedUrls = imageUrls.filter((url) => url !== urlToDelete);
+      setImageUrls(updatedUrls);
+      onUpload(updatedUrls); // Envoyer toutes les URLs restantes
       toast.success("Image supprimée");
     } catch (error) {
       console.error("Erreur suppression:", error);
@@ -134,7 +135,10 @@ export default function ImageUploader({
               <span className="font-semibold">Cliquez pour télécharger</span> ou
               glissez-déposez
             </p>
-            <p className="text-xs text-gray-500">PNG, JPG ou GIF (Max: 5MB)</p>
+            <p className="text-xs text-gray-500">
+              PNG, JPG ou GIF (Max: 5MB) - {maxFiles - imageUrls.length}{" "}
+              image(s) restante(s)
+            </p>
           </div>
           <input
             type="file"
@@ -142,7 +146,7 @@ export default function ImageUploader({
             multiple
             accept="image/*"
             onChange={handleFileSelect}
-            disabled={isUploading}
+            disabled={isUploading || imageUrls.length >= maxFiles}
           />
         </label>
       </div>

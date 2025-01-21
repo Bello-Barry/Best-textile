@@ -224,7 +224,7 @@ export default function NewProductPage() {
                     <FormControl>
                       <ImageUploader
                         onUpload={handleImageUpload}
-                        bucket="products"
+                        bucket="images"
                         maxFiles={5}
                       />
                     </FormControl>
