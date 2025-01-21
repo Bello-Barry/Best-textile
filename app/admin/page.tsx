@@ -92,37 +92,26 @@ const StatCard: React.FC<StatCardProps> = ({
 const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
   const router = useRouter();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
-const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-
+  // Premier useEffect pour l'authentification
   useEffect(() => {
-    // Attendre que user soit chargé
     if (user === null) return;
-    
     setIsAuthChecking(false);
     
     if (user.role !== "admin") {
       router.push("/");
       toast.error("Accès non autorisé");
+      return;
     }
-  }, [user, router]);
-
-// Afficher un loader pendant la vérification
-  if (isAuthChecking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  useEffect(() => {
+    
+    // Déplacer fetchData ici
     const fetchData = async () => {
       try {
         const [productsData, ordersData, clientsData] = await Promise.all([
@@ -142,16 +131,19 @@ const [isAuthChecking, setIsAuthChecking] = useState(true);
     };
 
     fetchData();
-  }, []);
+  }, [user, router]);
 
-  if (!user || user.role !== "admin") return null;
-  if (loading) {
+  // Afficher un loader pendant la vérification et le chargement
+  if (isAuthChecking || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
+
+  if (!user || user.role !== "admin") return null;
+
 
   const filteredOrders = orders.filter(
     (order) => orderStatusFilter === "all" || order.status === orderStatusFilter
