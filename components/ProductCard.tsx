@@ -74,8 +74,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       images: product.images,
     });
 
+    // Toast pour indiquer que le produit a bien été ajouté au panier
     toast.success(
-      `${quantity} mètre${quantity > 1 ? "s" : ""} ajouté${
+      `${quantity} mètre${quantity > 1 ? "s" : ""} de "${product.name}" ajouté${
         quantity > 1 ? "s" : ""
       } au panier`
     );

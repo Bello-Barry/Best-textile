@@ -1,16 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, User, Building } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, User, Building, Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import {
   Select,
   SelectContent,
@@ -20,45 +19,45 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Schémas de validation
+// Validation schemas
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
-  password: z
-    .string()
-    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   rememberMe: z.boolean(),
 });
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-    email: z.string().email("Email invalide"),
-    password: z
-      .string()
-      .min(6, "Le mot de passe doit contenir au moins 6 caractères")
-      .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
-      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
-    confirmPassword: z.string(),
-    role: z.enum(["client", "admin"], {
-      required_error: "Veuillez sélectionner un rôle",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Les mots de passe ne correspondent pas",
-    path: ["confirmPassword"],
-  });
+const registerSchema = z.object({
+  name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  email: z.string().email("Email invalide"),
+  password: z
+    .string()
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères")
+    .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
+    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
+  confirmPassword: z.string(),
+  role: z.enum(["client", "admin"], {
+    required_error: "Veuillez sélectionner un rôle",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"],
+});
 
 const AuthPage = () => {
-  const { login, register, resetPassword } = useAuthStore();
-  const [activeTab, setActiveTab] = useState("login");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+  const router = useRouter();
+  const { login, register, resetPassword, isAuthenticated } = useAuthStore();
+
+  // États
+  const [formState, setFormState] = useState({
+    activeTab: "login",
+    isLoading: false,
+    showForgotPassword: false,
+    showPassword: false,
+    validationErrors: {} as Record<string, string>,
+  });
 
   const [loginData, setLoginData] = useState({
-    email: "",
+    email: localStorage.getItem("rememberedEmail") || "",
     password: "",
     rememberMe: false,
   });
@@ -73,10 +72,18 @@ const AuthPage = () => {
 
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 
+  // Effets
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
+
+  // Validateurs
   const validateForm = (data: any, schema: z.ZodSchema<any>) => {
     try {
       schema.parse(data);
-      setValidationErrors({});
+      setFormState(prev => ({ ...prev, validationErrors: {} }));
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -87,17 +94,18 @@ const AuthPage = () => {
           }),
           {}
         );
-        setValidationErrors(errors);
+        setFormState(prev => ({ ...prev, validationErrors: errors }));
       }
       return false;
     }
   };
 
+  // Gestionnaires d'événements
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm(loginData, loginSchema)) return;
 
-    setIsLoading(true);
+    setFormState(prev => ({ ...prev, isLoading: true }));
     try {
       await login(loginData.email, loginData.password);
       if (loginData.rememberMe) {
@@ -105,10 +113,13 @@ const AuthPage = () => {
       } else {
         localStorage.removeItem("rememberedEmail");
       }
+      router.push("/");
+      toast.success("Connexion réussie !");
     } catch (error) {
+      toast.error("Erreur de connexion. Vérifiez vos identifiants.");
       console.error(error);
     } finally {
-      setIsLoading(false);
+      setFormState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -116,7 +127,7 @@ const AuthPage = () => {
     e.preventDefault();
     if (!validateForm(registerData, registerSchema)) return;
 
-    setIsLoading(true);
+    setFormState(prev => ({ ...prev, isLoading: true }));
     try {
       await register(
         registerData.name,
@@ -124,336 +135,253 @@ const AuthPage = () => {
         registerData.password,
         registerData.role
       );
-    } catch (error) {
-      console.error(error);
+      toast.success("Inscription réussie ! Veuillez vérifier votre email.");
+      setFormState(prev => ({ ...prev, activeTab: "login" }));
+      setRegisterData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "client",
+      });
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'inscription.");
     } finally {
-      setIsLoading(false);
+      setFormState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotPasswordEmail) return;
+    if (!forgotPasswordEmail) {
+      toast.error("Veuillez saisir votre email");
+      return;
+    }
 
-    setIsLoading(true);
+    setFormState(prev => ({ ...prev, isLoading: true }));
     try {
       await resetPassword(forgotPasswordEmail);
-      setShowForgotPassword(false);
+      toast.success("Instructions de réinitialisation envoyées");
+      setFormState(prev => ({ ...prev, showForgotPassword: false }));
+      setForgotPasswordEmail("");
     } catch (error) {
-      console.error(error);
+      toast.error("Erreur lors de l'envoi des instructions.");
     } finally {
-      setIsLoading(false);
+      setFormState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const slideVariants = {
-    enter: { x: 50, opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: -50, opacity: 0 },
-  };
+  // Rendu des composants de formulaire
+  const renderPasswordInput = (
+    value: string,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+    placeholder: string,
+    error?: string
+  ) => (
+    <div className="relative">
+      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+      <Input
+        type={formState.showPassword ? "text" : "password"}
+        placeholder={placeholder}
+        className="pl-10 pr-10"
+        value={value}
+        onChange={onChange}
+        required
+      />
+      <button
+        type="button"
+        onClick={() => setFormState(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+        className="absolute right-3 top-3"
+      >
+        {formState.showPassword ? (
+          <EyeOff className="h-5 w-5 text-gray-400" />
+        ) : (
+          <Eye className="h-5 w-5 text-gray-400" />
+        )}
+      </button>
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
+      <ToastContainer position="top-right" autoClose={5000} />
+      <div className="w-full max-w-md">
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-center">Bienvenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <AnimatePresence mode="wait">
-              {showForgotPassword ? (
-                <motion.div
-                  key="forgot"
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  variants={slideVariants}
-                  transition={{ duration: 0.3 }}
+            {formState.showForgotPassword ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                {/* Formulaire de réinitialisation du mot de passe */}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    className="pl-10"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={formState.isLoading}>
+                  {formState.isLoading ? "Envoi..." : "Réinitialiser le mot de passe"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setFormState(prev => ({ ...prev, showForgotPassword: false }))}
                 >
-                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                  Retour à la connexion
+                </Button>
+              </form>
+            ) : (
+              <Tabs
+                value={formState.activeTab}
+                onValueChange={(value) => setFormState(prev => ({ ...prev, activeTab: value }))}
+                className="space-y-4"
+              >
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="login">Connexion</TabsTrigger>
+                  <TabsTrigger value="register">Inscription</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    {/* Formulaire de connexion */}
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                       <Input
                         type="email"
                         placeholder="Email"
                         className="pl-10"
-                        value={forgotPasswordEmail}
-                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                         required
                       />
                     </div>
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Envoi..." : "Réinitialiser le mot de passe"}
+
+                    {renderPasswordInput(
+                      loginData.password,
+                      (e) => setLoginData({ ...loginData, password: e.target.value }),
+                      "Mot de passe",
+                      formState.validationErrors.password
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="rememberMe"
+                        checked={loginData.rememberMe}
+                        onCheckedChange={(checked) => setLoginData({
+                          ...loginData,
+                          rememberMe: checked as boolean,
+                        })}
+                      />
+                      <label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
+                        Se souvenir de moi
+                      </label>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={formState.isLoading}>
+                      {formState.isLoading ? "Connexion..." : "Se connecter"}
                     </Button>
+
                     <Button
                       type="button"
                       variant="ghost"
                       className="w-full"
-                      onClick={() => setShowForgotPassword(false)}
+                      onClick={() => setFormState(prev => ({ ...prev, showForgotPassword: true }))}
                     >
-                      Retour à la connexion
+                      Mot de passe oublié ?
                     </Button>
                   </form>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="auth"
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  variants={slideVariants}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="space-y-4"
-                  >
-                    <TabsList className="grid grid-cols-2">
-                      <TabsTrigger value="login">Connexion</TabsTrigger>
-                      <TabsTrigger value="register">Inscription</TabsTrigger>
-                    </TabsList>
+                </TabsContent>
 
-                    <TabsContent value="login">
-                      <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                            <Input
-                              type="email"
-                              placeholder="Email"
-                              className="pl-10"
-                              value={loginData.email}
-                              onChange={(e) =>
-                                setLoginData({
-                                  ...loginData,
-                                  email: e.target.value,
-                                })
-                              }
-                              required
-                            />
-                            {validationErrors.email && (
-                              <p className="text-red-500 text-sm mt-1">
-                                {validationErrors.email}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                <TabsContent value="register">
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    {/* Formulaire d'inscription */}
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Nom complet"
+                        className="pl-10"
+                        value={registerData.name}
+                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                        required
+                      />
+                      {formState.validationErrors.name && (
+                        <p className="text-red-500 text-sm mt-1">{formState.validationErrors.name}</p>
+                      )}
+                    </div>
 
-                        <div className="space-y-2">
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                            <Input
-                              type="password"
-                              placeholder="Mot de passe"
-                              className="pl-10"
-                              value={loginData.password}
-                              onChange={(e) =>
-                                setLoginData({
-                                  ...loginData,
-                                  password: e.target.value,
-                                })
-                              }
-                              required
-                            />
-                            {validationErrors.password && (
-                              <p className="text-red-500 text-sm mt-1">
-                                {validationErrors.password}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        className="pl-10"
+                        value={registerData.email}
+                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                        required
+                      />
+                      {formState.validationErrors.email && (
+                        <p className="text-red-500 text-sm mt-1">{formState.validationErrors.email}</p>
+                      )}
+                    </div>
 
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="rememberMe"
-                            checked={loginData.rememberMe}
-                            onCheckedChange={(checked) =>
-                              setLoginData({
-                                ...loginData,
-                                rememberMe: checked as boolean,
-                              })
-                            }
-                          />
-                          <label
-                            htmlFor="rememberMe"
-                            className="text-sm text-gray-600 cursor-pointer"
-                          >
-                            Se souvenir de moi
-                          </label>
-                        </div>
+                    {/* Suite du code à partir du Select */}
+<div className="relative">
+  <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+  <Select
+    defaultValue="client"
+    disabled={true}
+    value={registerData.role}
+  >
+    <SelectTrigger className="pl-10">
+      <SelectValue placeholder="Sélectionnez un rôle" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="client">Client</SelectItem>
+      <SelectItem value="admin">Administrateur</SelectItem>
+    </SelectContent>
+  </Select>
+  {formState.validationErrors.role && (
+    <p className="text-red-500 text-sm mt-1">{formState.validationErrors.role}</p>
+  )}
+</div>
 
-                        <Button
-                          type="submit"
-                          className="w-full"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? "Connexion..." : "Se connecter"}
-                        </Button>
+{renderPasswordInput(
+  registerData.password,
+  (e) => setRegisterData({ ...registerData, password: e.target.value }),
+  "Mot de passe",
+  formState.validationErrors.password
+)}
 
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => setShowForgotPassword(true)}
-                        >
-                          Mot de passe oublié ?
-                        </Button>
-                      </form>
-                    </TabsContent>
+{renderPasswordInput(
+  registerData.confirmPassword,
+  (e) => setRegisterData({ ...registerData, confirmPassword: e.target.value }),
+  "Confirmer le mot de passe",
+  formState.validationErrors.confirmPassword
+)}
 
-                    <TabsContent value="register">
-                      <form onSubmit={handleRegister} className="space-y-4">
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Input
-                            type="text"
-                            placeholder="Nom complet"
-                            className="pl-10"
-                            value={registerData.name}
-                            onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                name: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                          {validationErrors.name && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.name}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Input
-                            type="email"
-                            placeholder="Email"
-                            className="pl-10"
-                            value={registerData.email}
-                            onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                email: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                          {validationErrors.email && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.email}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Select
-                            defaultValue={registerData.role}
-                            onValueChange={(value: "client" | "admin") =>
-                              setRegisterData({ ...registerData, role: value })
-                            }
-                          >
-                            <SelectTrigger className="pl-10">
-                              <SelectValue placeholder="Sélectionnez un rôle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="client">Client</SelectItem>
-                              <SelectItem value="admin">
-                                Administrateur
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {validationErrors.role && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.role}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Input
-                            type="password"
-                            placeholder="Mot de passe"
-                            className="pl-10"
-                            value={registerData.password}
-                            onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                password: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                          {validationErrors.password && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.password}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <Input
-                            type="password"
-                            placeholder="Confirmer le mot de passe"
-                            className="pl-10"
-                            value={registerData.confirmPassword}
-                            onChange={(e) =>
-                              setRegisterData({
-                                ...registerData,
-                                confirmPassword: e.target.value,
-                              })
-                            }
-                            required
-                          />
-                          {validationErrors.confirmPassword && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {validationErrors.confirmPassword}
-                            </p>
-                          )}
-                        </div>
-
-                        <Button
-                          type="submit"
-                          className="w-full"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? "Inscription..." : "S'inscrire"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
-                </motion.div>
-              )}
-            </AnimatePresence>
+<Button 
+  type="submit" 
+  className="w-full" 
+  disabled={formState.isLoading}
+>
+  {formState.isLoading ? "Inscription..." : "S'inscrire"}
+</Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 };
