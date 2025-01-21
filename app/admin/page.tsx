@@ -98,13 +98,29 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+const [isAuthChecking, setIsAuthChecking] = useState(true);
+
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    // Attendre que user soit chargé
+    if (user === null) return;
+    
+    setIsAuthChecking(false);
+    
+    if (user.role !== "admin") {
       router.push("/");
       toast.error("Accès non autorisé");
     }
   }, [user, router]);
+
+// Afficher un loader pendant la vérification
+  if (isAuthChecking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   useEffect(() => {
     const fetchData = async () => {
