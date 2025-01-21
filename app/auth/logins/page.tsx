@@ -22,26 +22,30 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Validation schemas
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  password: z
+    .string()
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   rememberMe: z.boolean(),
 });
 
-const registerSchema = z.object({
-  name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.string().email("Email invalide"),
-  password: z
-    .string()
-    .min(6, "Le mot de passe doit contenir au moins 6 caractères")
-    .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
-    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
-  confirmPassword: z.string(),
-  role: z.enum(["client", "admin"], {
-    required_error: "Veuillez sélectionner un rôle",
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    email: z.string().email("Email invalide"),
+    password: z
+      .string()
+      .min(6, "Le mot de passe doit contenir au moins 6 caractères")
+      .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
+      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
+    confirmPassword: z.string(),
+    role: z.enum(["client", "admin"], {
+      required_error: "Veuillez sélectionner un rôle",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
 
 const AuthPage = () => {
   const router = useRouter();
@@ -57,7 +61,7 @@ const AuthPage = () => {
   });
 
   const [loginData, setLoginData] = useState({
-    email: localStorage.getItem("rememberedEmail") || "",
+    email: "",
     password: "",
     rememberMe: false,
   });
@@ -79,11 +83,19 @@ const AuthPage = () => {
     }
   }, [isAuthenticated, router]);
 
+  // Charger l'email mémorisé depuis localStorage côté client
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const rememberedEmail = localStorage.getItem("rememberedEmail") || "";
+      setLoginData((prev) => ({ ...prev, email: rememberedEmail }));
+    }
+  }, []);
+
   // Validateurs
   const validateForm = (data: any, schema: z.ZodSchema<any>) => {
     try {
       schema.parse(data);
-      setFormState(prev => ({ ...prev, validationErrors: {} }));
+      setFormState((prev) => ({ ...prev, validationErrors: {} }));
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -94,7 +106,7 @@ const AuthPage = () => {
           }),
           {}
         );
-        setFormState(prev => ({ ...prev, validationErrors: errors }));
+        setFormState((prev) => ({ ...prev, validationErrors: errors }));
       }
       return false;
     }
@@ -105,7 +117,7 @@ const AuthPage = () => {
     e.preventDefault();
     if (!validateForm(loginData, loginSchema)) return;
 
-    setFormState(prev => ({ ...prev, isLoading: true }));
+    setFormState((prev) => ({ ...prev, isLoading: true }));
     try {
       await login(loginData.email, loginData.password);
       if (loginData.rememberMe) {
@@ -119,7 +131,7 @@ const AuthPage = () => {
       toast.error("Erreur de connexion. Vérifiez vos identifiants.");
       console.error(error);
     } finally {
-      setFormState(prev => ({ ...prev, isLoading: false }));
+      setFormState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -127,7 +139,7 @@ const AuthPage = () => {
     e.preventDefault();
     if (!validateForm(registerData, registerSchema)) return;
 
-    setFormState(prev => ({ ...prev, isLoading: true }));
+    setFormState((prev) => ({ ...prev, isLoading: true }));
     try {
       await register(
         registerData.name,
@@ -136,7 +148,7 @@ const AuthPage = () => {
         registerData.role
       );
       toast.success("Inscription réussie ! Veuillez vérifier votre email.");
-      setFormState(prev => ({ ...prev, activeTab: "login" }));
+      setFormState((prev) => ({ ...prev, activeTab: "login" }));
       setRegisterData({
         name: "",
         email: "",
@@ -147,7 +159,7 @@ const AuthPage = () => {
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de l'inscription.");
     } finally {
-      setFormState(prev => ({ ...prev, isLoading: false }));
+      setFormState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -158,16 +170,16 @@ const AuthPage = () => {
       return;
     }
 
-    setFormState(prev => ({ ...prev, isLoading: true }));
+    setFormState((prev) => ({ ...prev, isLoading: true }));
     try {
       await resetPassword(forgotPasswordEmail);
       toast.success("Instructions de réinitialisation envoyées");
-      setFormState(prev => ({ ...prev, showForgotPassword: false }));
+      setFormState((prev) => ({ ...prev, showForgotPassword: false }));
       setForgotPasswordEmail("");
     } catch (error) {
       toast.error("Erreur lors de l'envoi des instructions.");
     } finally {
-      setFormState(prev => ({ ...prev, isLoading: false }));
+      setFormState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -190,7 +202,12 @@ const AuthPage = () => {
       />
       <button
         type="button"
-        onClick={() => setFormState(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+        onClick={() =>
+          setFormState((prev) => ({
+            ...prev,
+            showPassword: !prev.showPassword,
+          }))
+        }
         className="absolute right-3 top-3"
       >
         {formState.showPassword ? (
@@ -226,14 +243,25 @@ const AuthPage = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={formState.isLoading}>
-                  {formState.isLoading ? "Envoi..." : "Réinitialiser le mot de passe"}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={formState.isLoading}
+                >
+                  {formState.isLoading
+                    ? "Envoi..."
+                    : "Réinitialiser le mot de passe"}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   className="w-full"
-                  onClick={() => setFormState(prev => ({ ...prev, showForgotPassword: false }))}
+                  onClick={() =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      showForgotPassword: false,
+                    }))
+                  }
                 >
                   Retour à la connexion
                 </Button>
@@ -241,7 +269,9 @@ const AuthPage = () => {
             ) : (
               <Tabs
                 value={formState.activeTab}
-                onValueChange={(value) => setFormState(prev => ({ ...prev, activeTab: value }))}
+                onValueChange={(value) =>
+                  setFormState((prev) => ({ ...prev, activeTab: value }))
+                }
                 className="space-y-4"
               >
                 <TabsList className="grid grid-cols-2">
@@ -259,14 +289,20 @@ const AuthPage = () => {
                         placeholder="Email"
                         className="pl-10"
                         value={loginData.email}
-                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
                         required
                       />
                     </div>
 
                     {renderPasswordInput(
                       loginData.password,
-                      (e) => setLoginData({ ...loginData, password: e.target.value }),
+                      (e) =>
+                        setLoginData({
+                          ...loginData,
+                          password: e.target.value,
+                        }),
                       "Mot de passe",
                       formState.validationErrors.password
                     )}
@@ -275,17 +311,26 @@ const AuthPage = () => {
                       <Checkbox
                         id="rememberMe"
                         checked={loginData.rememberMe}
-                        onCheckedChange={(checked) => setLoginData({
-                          ...loginData,
-                          rememberMe: checked as boolean,
-                        })}
+                        onCheckedChange={(checked) =>
+                          setLoginData({
+                            ...loginData,
+                            rememberMe: checked as boolean,
+                          })
+                        }
                       />
-                      <label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
+                      <label
+                        htmlFor="rememberMe"
+                        className="text-sm text-gray-600 cursor-pointer"
+                      >
                         Se souvenir de moi
                       </label>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={formState.isLoading}>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={formState.isLoading}
+                    >
                       {formState.isLoading ? "Connexion..." : "Se connecter"}
                     </Button>
 
@@ -293,7 +338,12 @@ const AuthPage = () => {
                       type="button"
                       variant="ghost"
                       className="w-full"
-                      onClick={() => setFormState(prev => ({ ...prev, showForgotPassword: true }))}
+                      onClick={() =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          showForgotPassword: true,
+                        }))
+                      }
                     >
                       Mot de passe oublié ?
                     </Button>
@@ -310,11 +360,18 @@ const AuthPage = () => {
                         placeholder="Nom complet"
                         className="pl-10"
                         value={registerData.name}
-                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            name: e.target.value,
+                          })
+                        }
                         required
                       />
                       {formState.validationErrors.name && (
-                        <p className="text-red-500 text-sm mt-1">{formState.validationErrors.name}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {formState.validationErrors.name}
+                        </p>
                       )}
                     </div>
 
@@ -325,56 +382,72 @@ const AuthPage = () => {
                         placeholder="Email"
                         className="pl-10"
                         value={registerData.email}
-                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            email: e.target.value,
+                          })
+                        }
                         required
                       />
                       {formState.validationErrors.email && (
-                        <p className="text-red-500 text-sm mt-1">{formState.validationErrors.email}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {formState.validationErrors.email}
+                        </p>
                       )}
                     </div>
 
-                    {/* Suite du code à partir du Select */}
-<div className="relative">
-  <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-  <Select
-    defaultValue="client"
-    disabled={true}
-    value={registerData.role}
-  >
-    <SelectTrigger className="pl-10">
-      <SelectValue placeholder="Sélectionnez un rôle" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="client">Client</SelectItem>
-      <SelectItem value="admin">Administrateur</SelectItem>
-    </SelectContent>
-  </Select>
-  {formState.validationErrors.role && (
-    <p className="text-red-500 text-sm mt-1">{formState.validationErrors.role}</p>
-  )}
-</div>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Select
+                        defaultValue="client"
+                        disabled={true}
+                        value={registerData.role}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Sélectionnez un rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="admin">Administrateur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {formState.validationErrors.role && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {formState.validationErrors.role}
+                        </p>
+                      )}
+                    </div>
 
-{renderPasswordInput(
-  registerData.password,
-  (e) => setRegisterData({ ...registerData, password: e.target.value }),
-  "Mot de passe",
-  formState.validationErrors.password
-)}
+                    {renderPasswordInput(
+                      registerData.password,
+                      (e) =>
+                        setRegisterData({
+                          ...registerData,
+                          password: e.target.value,
+                        }),
+                      "Mot de passe",
+                      formState.validationErrors.password
+                    )}
 
-{renderPasswordInput(
-  registerData.confirmPassword,
-  (e) => setRegisterData({ ...registerData, confirmPassword: e.target.value }),
-  "Confirmer le mot de passe",
-  formState.validationErrors.confirmPassword
-)}
+                    {renderPasswordInput(
+                      registerData.confirmPassword,
+                      (e) =>
+                        setRegisterData({
+                          ...registerData,
+                          confirmPassword: e.target.value,
+                        }),
+                      "Confirmer le mot de passe",
+                      formState.validationErrors.confirmPassword
+                    )}
 
-<Button 
-  type="submit" 
-  className="w-full" 
-  disabled={formState.isLoading}
->
-  {formState.isLoading ? "Inscription..." : "S'inscrire"}
-</Button>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={formState.isLoading}
+                    >
+                      {formState.isLoading ? "Inscription..." : "S'inscrire"}
+                    </Button>
                   </form>
                 </TabsContent>
               </Tabs>
