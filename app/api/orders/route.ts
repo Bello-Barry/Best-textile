@@ -6,10 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const { user } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: "Non authentifié" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -66,10 +63,7 @@ export async function GET(req: NextRequest) {
   try {
     const { user } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: "Non authentifié" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     const { data: profile } = await supabase
@@ -81,9 +75,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = profile?.role === "admin";
     const userId = user.id;
 
-    let query = supabase
-      .from("orders")
-      .select(`
+    let query = supabase.from("orders").select(`
         *,
         order_items (
           id,
@@ -98,7 +90,9 @@ export async function GET(req: NextRequest) {
       query = query.eq("user_id", userId);
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) throw error;
 
@@ -116,10 +110,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const { user } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: "Non authentifié" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     const { data: profile } = await supabase
@@ -129,10 +120,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (profile?.role !== "admin") {
-      return NextResponse.json(
-        { error: "Non autorisé" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
     const body = await req.json();

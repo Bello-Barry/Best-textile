@@ -58,6 +58,7 @@ interface Product {
 }
 
 interface Order {
+  total_amount: number;
   id: string;
   created_at: string;
   status: string;
@@ -104,13 +105,13 @@ const AdminPage: React.FC = () => {
   useEffect(() => {
     if (user === null) return;
     setIsAuthChecking(false);
-    
+
     if (user.role !== "admin") {
       router.push("/");
       toast.error("Accès non autorisé");
       return;
     }
-    
+
     // Déplacer fetchData ici
     const fetchData = async () => {
       try {
@@ -144,7 +145,6 @@ const AdminPage: React.FC = () => {
 
   if (!user || user.role !== "admin") return null;
 
-
   const filteredOrders = orders.filter(
     (order) => orderStatusFilter === "all" || order.status === orderStatusFilter
   );
@@ -152,8 +152,10 @@ const AdminPage: React.FC = () => {
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + order.total_amount,
+    0
+  );
   const averageOrderValue =
     orders.length > 0 ? totalRevenue / orders.length : 0;
 
@@ -170,6 +172,12 @@ const AdminPage: React.FC = () => {
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau Produit
+          </Button>
+        </Link>
+        <Link href="/admin/orders">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            confirmer la commande
           </Button>
         </Link>
       </div>

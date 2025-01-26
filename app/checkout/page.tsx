@@ -1,65 +1,131 @@
 "use client";
 
-import { useCart } from "@/context/CartContext";
-import { z } from "zod";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { supabase } from "@/lib/supabaseClient";
+import { useCartStore } from "@/store/cartStore";
 import { toast } from "react-toastify";
-import { 
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter 
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue, 
+  SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 const checkoutSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   address: z.string().min(1, "L'adresse est requise"),
   phone: z.string().min(1, "Le numéro de téléphone est requis"),
-  paymentMethod: z.enum(["online", "onplace"]),
+  paymentMethod: z.enum(["online", "onplace"], {
+    required_error: "Veuillez sélectionner un mode de paiement",
+  }),
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
-  const { cartItems, clearCart, total } = useCart();
-  
+  const { cartItems, clearCart } = useCartStore();
+  const [debugInfo, setDebugInfo] = useState<string>("");
+
+  // Calculate total amount
+  const total = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+      phone: "",
+      paymentMethod: undefined,
+    },
   });
 
-  const onSubmit = async (data: CheckoutFormData) => {
-    try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          items: cartItems,
-          total,
-          status: "pending",
-        }),
-      });
+  const addDebugInfo = (info: string) => {
+    setDebugInfo((prev) => prev + "\n" + info);
+    console.log(info);
+  };
 
-      if (response.ok) {
-        toast.success("Commande passée avec succès !");
-        clearCart();
-      } else {
-        toast.error("Erreur lors de la commande.");
+  const onSubmit = async (formData: CheckoutFormData) => {
+    setDebugInfo(""); // Reset debug info
+
+    try {
+      addDebugInfo("Début de la soumission du formulaire");
+
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error("Le panier est vide");
       }
-    } catch (error) {
-      toast.error("Une erreur est survenue.");
+
+      addDebugInfo("Préparation des données de commande");
+
+      // Test de connexion Supabase
+      try {
+        const { error: testError } = await supabase
+          .from("orders")
+          .select("id")
+          .limit(1);
+
+        if (testError) {
+          addDebugInfo(
+            `Erreur de connexion Supabase: ${JSON.stringify(testError)}`
+          );
+          throw testError;
+        }
+        addDebugInfo("Connexion Supabase OK");
+      } catch (testError) {
+        addDebugInfo(
+          `Erreur lors du test de connexion: ${JSON.stringify(testError)}`
+        );
+        throw testError;
+      }
+
+      const orderData = {
+        customer_name: formData.name,
+        delivery_address: formData.address,
+        phone_number: formData.phone,
+        payment_method: formData.paymentMethod,
+        items: JSON.stringify(cartItems), // Serialize items to avoid JSONB issues
+        total_amount: total, // Ensure total is a number
+        status: "pending",
+        created_at: new Date().toISOString(),
+      };
+
+      addDebugInfo(`Données à envoyer: ${JSON.stringify(orderData)}`);
+
+      // Tentative d'insertion
+      const { error } = await supabase.from("orders").insert([orderData]);
+
+      if (error) {
+        addDebugInfo(
+          `Erreur Supabase lors de l'insertion: ${JSON.stringify(error)}`
+        );
+        throw error;
+      }
+
+      addDebugInfo("Commande créée avec succès");
+      toast.success("Commande passée avec succès !");
+      clearCart();
+      form.reset();
+    } catch (error: any) {
+      addDebugInfo(`Erreur finale: ${JSON.stringify(error)}`);
+      toast.error(error.message || "Une erreur est survenue");
     }
   };
 
@@ -70,72 +136,91 @@ export default function CheckoutPage() {
           <CardTitle>Passer la commande</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom complet</Label>
-              <Input
-                id="name"
-                {...form.register("name")}
-                className="w-full"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom complet</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {form.formState.errors.name && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.name.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Adresse de livraison</Label>
-              <Input
-                id="address"
-                {...form.register("address")}
-                className="w-full"
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Adresse de livraison</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {form.formState.errors.address && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.address.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Numéro de téléphone</Label>
-              <Input
-                id="phone"
-                {...form.register("phone")}
-                className="w-full"
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Numéro de téléphone</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {form.formState.errors.phone && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.phone.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Méthode de paiement</Label>
-              <Select 
-                onValueChange={(value) => 
-                  form.setValue("paymentMethod", value as "online" | "onplace")
-                }
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Méthode de paiement</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir un mode de paiement" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="online">En ligne</SelectItem>
+                        <SelectItem value="onplace">Sur place</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un mode de paiement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">En ligne</SelectItem>
-                  <SelectItem value="onplace">Sur place</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-4">
-              <Button type="submit" className="w-full">
-                Confirmer la commande ({total}€)
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Traitement...
+                  </>
+                ) : (
+                  `Confirmer la commande (${total}€)`
+                )}
               </Button>
-            </div>
-          </form>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

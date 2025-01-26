@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState, ChangeEvent } from "react";
-import { useCart } from "@/context/CartContext";
+import { useCartStore } from "@/store/cartStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +12,7 @@ import {
   ChevronRight,
   ImageIcon,
   Loader2,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -31,7 +34,7 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart } = useCart();
+  const { addToCart } = useCartStore();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isImageLoading, setIsImageLoading] = useState(true);
@@ -64,21 +67,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       return;
     }
 
-    const totalPrice = Number((product.price * quantity).toFixed(2));
-
     addToCart({
-      id: product.id,
+      id: product.id.toString(),
       name: product.name,
-      price: totalPrice,
+      price: product.price,
       quantity,
       images: product.images,
     });
 
-    // Toast pour indiquer que le produit a bien été ajouté au panier
     toast.success(
-      `${quantity} mètre${quantity > 1 ? "s" : ""} de "${product.name}" ajouté${
-        quantity > 1 ? "s" : ""
-      } au panier`
+      <div className="flex items-center">
+        <Check className="mr-2 h-5 w-5 text-green-500" />
+        {quantity} mètre{quantity > 1 ? "s" : ""} de "{product.name}" ajouté
+        {quantity > 1 ? "s" : ""} au panier
+      </div>,
+      {
+        icon: false,
+        progressClassName: "bg-green-500",
+      }
     );
   };
 
