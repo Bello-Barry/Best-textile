@@ -325,11 +325,14 @@ export default function AdminProductsPage() {
                       <TableCell>
                         <Badge
                           variant={
-                            product.stock === 0
-                              ? "destructive"
-                              : product.stock <= 5
-                              ? "warning"
-                              : "success"
+                            product.stock === 0 ? "destructive" : "default"
+                          }
+                          className={
+                            product.stock <= 5 && product.stock > 0
+                              ? "bg-yellow-500 hover:bg-yellow-600 text-white" // Style pour stock bas
+                              : product.stock > 5
+                              ? "bg-green-500 hover:bg-green-600 text-white" // Style pour stock normal
+                              : ""
                           }
                         >
                           {product.stock}
