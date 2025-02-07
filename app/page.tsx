@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { Search, ShoppingCart, Star, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -7,22 +8,57 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Interface mise à jour pour correspondre à celle de ProductCard
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  images: string[];
+  type: string;
+  subtype?: string;
+  created_at: string;
+}
+
+interface Category {
+  name: string;
+  image: string;
+  count: number;
+}
+
 const LandingPage = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-const [categories, setCategories] = useState([
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([
     { name: "Soie", image: "/api/placeholder/300/200", count: 0 },
     { name: "Bazin", image: "/api/placeholder/300/200", count: 0 },
     { name: "Autre", image: "/api/placeholder/300/200", count: 0 },
   ]);
+
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .select("*")
         .limit(4)
         .order("created_at", { ascending: false });
 
-      if (data) setFeaturedProducts(data);
+      if (error) {
+        console.error("Erreur lors du chargement des produits:", error);
+        return;
+      }
+
+      // Transformation des données pour s'assurer qu'elles correspondent à l'interface Product
+      if (data) {
+        const formattedProducts: Product[] = data.map((product) => ({
+          ...product,
+          id: Number(product.id),
+          images: product.image_url ? [product.image_url] : [], // Conversion de image_url en tableau images
+          type: product.category || "Non catégorisé", // Utilisation de la catégorie comme type
+          stock: product.stock || 0,
+        }));
+        setFeaturedProducts(formattedProducts);
+      }
     };
 
     fetchFeaturedProducts();
