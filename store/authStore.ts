@@ -11,6 +11,7 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  isAuthenticated: boolean; // Nouvelle propriété ajoutée
   login: (email: string, password: string) => Promise<void>;
   register: (
     name: string,
@@ -20,13 +21,13 @@ interface AuthState {
   ) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>; // Nouvelle fonction
+  resetPassword: (email: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  isAuthenticated: false, // Initialisation de isAuthenticated
 
-  // Connexion de l'utilisateur
   login: async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -39,7 +40,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Récupérer le profil utilisateur depuis la table `profiles`
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -53,7 +53,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Mettre à jour l'état avec l'utilisateur connecté
       set({
         user: {
           id: profile.id,
@@ -61,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           email: profile.email,
           role: profile.role,
         },
+        isAuthenticated: true, // Mise à jour de isAuthenticated lors de la connexion
       });
       toast.success("Connexion réussie !");
     } catch (error) {
@@ -68,10 +68,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  // Inscription de l'utilisateur
   register: async (name, email, password, role) => {
     try {
-      // Créer l'utilisateur dans Supabase Auth
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
@@ -79,7 +77,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Ajouter le profil utilisateur dans la table `profiles`
       const { error: profileError } = await supabase
         .from("profiles")
         .insert([{ id: data.user?.id, name, email, role }]);
@@ -91,15 +88,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Mettre à jour l'état avec l'utilisateur inscrit
-      set({ user: { id: data.user?.id!, name, email, role } });
+      set({
+        user: { id: data.user?.id!, name, email, role },
+        isAuthenticated: true, // Mise à jour de isAuthenticated lors de l'inscription
+      });
       toast.success("Inscription réussie !");
     } catch (error) {
       toast.error("Une erreur est survenue lors de l'inscription.");
     }
   },
 
-  // Déconnexion de l'utilisateur
   logout: async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -109,15 +107,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Réinitialiser l'état de l'utilisateur
-      set({ user: null });
+      set({
+        user: null,
+        isAuthenticated: false, // Mise à jour de isAuthenticated lors de la déconnexion
+      });
       toast.success("Déconnexion réussie.");
     } catch (error) {
       toast.error("Une erreur est survenue lors de la déconnexion.");
     }
   },
 
-  // Récupérer l'utilisateur actuel (au chargement de l'application)
   fetchUser: async () => {
     try {
       const {
@@ -125,7 +124,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       } = await supabase.auth.getUser();
 
       if (user) {
-        // Récupérer le profil utilisateur depuis la table `profiles`
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -139,7 +137,6 @@ export const useAuthStore = create<AuthState>((set) => ({
           return;
         }
 
-        // Mettre à jour l'état avec l'utilisateur connecté
         set({
           user: {
             id: profile.id,
@@ -147,6 +144,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             email: profile.email,
             role: profile.role,
           },
+          isAuthenticated: true, // Mise à jour de isAuthenticated lors de la récupération
         });
       }
     } catch (error) {
@@ -156,11 +154,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  // Réinitialisation du mot de passe
   resetPassword: async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`, // Rediriger vers la page de mise à jour du mot de passe
+        redirectTo: `${window.location.origin}/auth/update-password`,
       });
 
       if (error) {
