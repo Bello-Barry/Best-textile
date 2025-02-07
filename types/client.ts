@@ -5,4 +5,3 @@ export interface Client {
   phone: string;
   address: string;
 }
-tailwind - merge;
