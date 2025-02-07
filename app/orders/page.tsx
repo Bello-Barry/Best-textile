@@ -27,7 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OrderItem {
   id: string;
-  name: string; // Changed from product_name to match other pages
+  name: string;
   quantity: number;
   price: number;
 }
@@ -177,7 +177,7 @@ export default function CustomerOrdersPage() {
           {orders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <AlertCircle className="mx-auto mb-4" size={48} />
-              <p>Vous n'avez pas encore passé de commandes.</p>
+              <p>Vous n&apos;avez pas encore passé de commandes.</p>
             </div>
           ) : (
             <div className="space-y-4">
