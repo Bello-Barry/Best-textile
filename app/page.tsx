@@ -53,7 +53,7 @@ const LandingPage = () => {
         const formattedProducts: Product[] = data.map((product) => ({
           ...product,
           id: Number(product.id),
-          images: product.image_url ? [product.image_url] : [], // Conversion de image_url en tableau images
+          images: product.images || [], // Conversion de image_url en tableau images
           type: product.category || "Non catégorisé", // Utilisation de la catégorie comme type
           stock: product.stock || 0,
         }));
