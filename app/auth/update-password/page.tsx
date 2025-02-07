@@ -13,13 +13,15 @@ const schema = z.object({
     .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
 });
 
+type ResetPasswordFormData = z.infer<typeof schema>;
+
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(schema),
   });
 
@@ -57,7 +59,7 @@ export default function UpdatePasswordPage() {
             className="w-full border rounded px-2 py-1"
           />
           {errors.password && (
-            <p className="text-red-500">{errors.password.message}</p>
+            <p className="text-red-500">{errors.password.message as string}</p>
           )}
         </div>
         <button
