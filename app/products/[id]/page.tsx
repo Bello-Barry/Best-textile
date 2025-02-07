@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
 
+// Définir le schéma de validation
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -16,15 +17,28 @@ const schema = z.object({
   stock: z.number().min(0, "Le stock doit être positif"),
 });
 
+// Créer un type à partir du schéma
+type ProductFormData = z.infer<typeof schema>;
+
+// Interface pour le produit
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<ProductFormData>({
     resolver: zodResolver(schema),
   });
 
@@ -46,7 +60,7 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [id]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ProductFormData) => {
     try {
       const { error } = await supabase
         .from("products")
@@ -79,7 +93,9 @@ export default function ProductDetailPage() {
             {...register("name")}
             className="w-full border rounded px-2 py-1"
           />
-          {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+          {errors.name && (
+            <p className="text-red-500">{errors.name.message?.toString()}</p>
+          )}
         </div>
         <div>
           <label>Description</label>
@@ -89,7 +105,9 @@ export default function ProductDetailPage() {
             className="w-full border rounded px-2 py-1"
           />
           {errors.description && (
-            <p className="text-red-500">{errors.description.message}</p>
+            <p className="text-red-500">
+              {errors.description.message?.toString()}
+            </p>
           )}
         </div>
         <div>
@@ -101,7 +119,7 @@ export default function ProductDetailPage() {
             className="w-full border rounded px-2 py-1"
           />
           {errors.price && (
-            <p className="text-red-500">{errors.price.message}</p>
+            <p className="text-red-500">{errors.price.message?.toString()}</p>
           )}
         </div>
         <div>
@@ -113,15 +131,10 @@ export default function ProductDetailPage() {
             className="w-full border rounded px-2 py-1"
           />
           {errors.stock && (
-            <p className="text-red-500">{errors.stock.message}</p>
+            <p className="text-red-500">{errors.stock.message?.toString()}</p>
           )}
         </div>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Mettre à jour
-        </button>
+        <Button type="submit">Mettre à jour</Button>
       </form>
     </div>
   );
