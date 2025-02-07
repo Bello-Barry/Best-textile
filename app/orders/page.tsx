@@ -27,7 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OrderItem {
   id: string;
-  product_name: string;
+  name: string; // Changed from product_name to match other pages
   quantity: number;
   price: number;
 }
@@ -56,22 +56,19 @@ export default function CustomerOrdersPage() {
       try {
         const { data, error } = await supabase
           .from("orders")
-          .select(
-            `
-            *,
-            items (
-              id,
-              product_name,
-              quantity,
-              price
-            )
-          `
-          )
+          .select("*")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setOrders(data || []);
+
+        // Parse the items JSON string for each order
+        const parsedOrders = data.map((order) => ({
+          ...order,
+          items: JSON.parse(order.items),
+        }));
+
+        setOrders(parsedOrders);
       } catch (error) {
         toast.error("Erreur lors du chargement des commandes");
       } finally {
@@ -103,10 +100,19 @@ export default function CustomerOrdersPage() {
     return statusMap[status];
   };
 
-  const renderOrderDetails = (order: Order) => {
-    const statusConfig = getStatusConfig(order.status);
-    const StatusIcon = statusConfig.icon;
+  const renderStatusBadge = (status: Order["status"]) => {
+    const config = getStatusConfig(status);
+    const StatusIcon = config.icon;
 
+    return (
+      <Badge className={`${config.color} text-white flex items-center gap-2`}>
+        <StatusIcon size={16} />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const renderOrderDetails = (order: Order) => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -116,12 +122,7 @@ export default function CustomerOrdersPage() {
               {new Date(order.created_at).toLocaleDateString()}
             </p>
           </div>
-          <Badge
-            className={`${statusConfig.color} text-white flex items-center gap-2`}
-          >
-            <StatusIcon size={16} />
-            {statusConfig.label}
-          </Badge>
+          {renderStatusBadge(order.status)}
         </div>
 
         <div className="border rounded-lg p-4 bg-gray-50">
@@ -129,13 +130,13 @@ export default function CustomerOrdersPage() {
             <ShoppingCart size={16} /> Détails des produits
           </h4>
           <ScrollArea className="h-64 pr-4">
-            {order.items.map((item) => (
+            {order.items.map((item, index) => (
               <div
-                key={item.id}
+                key={item.id || index}
                 className="flex justify-between items-center py-2 border-b last:border-b-0"
               >
                 <div>
-                  <p className="font-medium">{item.product_name}</p>
+                  <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-gray-500">
                     Quantité : {item.quantity}
                   </p>
@@ -187,12 +188,7 @@ export default function CustomerOrdersPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">Commande #{order.id}</span>
-                    {getStatusConfig(order.status).icon({
-                      size: 20,
-                      className: `text-${
-                        getStatusConfig(order.status).color.split("-")[1]
-                      }-500`,
-                    })}
+                    {renderStatusBadge(order.status)}
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-500">
