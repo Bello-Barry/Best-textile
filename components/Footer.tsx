@@ -23,7 +23,7 @@ const DynamicFooter = ({ isAdmin = false }) => {
     },
     {
       name: 'Profil',
-      href: '/profile',
+      href: '/profiles',
       icon: User,
     },
     ...(isAdmin ? [{
