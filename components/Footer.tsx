@@ -1,14 +1,19 @@
 "use client"
 
-import React from 'react';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Home, ShoppingBag, User, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
-const DynamicFooter = ({ isAdmin = false }) => {
+const DynamicFooter = () => {
+  const { user, isAuthenticated } = useAuthStore();
   const pathname = usePathname();
+  
+  if (!isAuthenticated || !user) {
+    return null;
+  }
   
   const navigation = [
     {
@@ -26,7 +31,7 @@ const DynamicFooter = ({ isAdmin = false }) => {
       href: '/profiles',
       icon: User,
     },
-    ...(isAdmin ? [{
+    ...(user.role === 'admin' ? [{
       name: 'Admin',
       href: '/admin',
       icon: Settings,
