@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore } from '@/store/AuthStore';
 import { Home, ShoppingBag, User, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
