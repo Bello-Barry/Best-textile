@@ -1,58 +1,76 @@
-import { Facebook, Instagram, Twitter } from "lucide-react";
-import Link from "next/link";
+import React from 'react';
+import { Home, ShoppingBag, User, Settings } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
-export default function Footer() {
+const DynamicFooter = ({ isAdmin = false }) => {
+  const pathname = usePathname();
+  
+  const navigation = [
+    {
+      name: 'Accueil',
+      href: '/',
+      icon: Home,
+    },
+    {
+      name: 'Commandes',
+      href: '/orders',
+      icon: ShoppingBag,
+    },
+    {
+      name: 'Profil',
+      href: '/profile',
+      icon: User,
+    },
+    ...(isAdmin ? [{
+      name: 'Admin',
+      href: '/admin',
+      icon: Settings,
+    }] : []),
+  ];
+
   return (
-    <footer className="bg-gray-800 text-white py-8">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div>
-          <h3 className="text-xl font-bold mb-4">Ma Boutique de Tissus</h3>
-          <p className="text-gray-400">
-            Votre destination pour les tissus de qualité. Découvrez notre
-            collection unique.
-          </p>
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-4">Liens Utiles</h3>
-          <ul className="space-y-2">
-            <li>
-              <Link href="/" className="text-gray-400 hover:text-white">
-                Accueil
+    <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg">
+      <div className="max-w-lg mx-auto px-4">
+        <nav className="flex justify-around items-center h-16">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex-1"
+              >
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    'w-full h-14 flex flex-col items-center justify-center space-y-1 rounded-none hover:bg-gray-100',
+                    isActive && 'text-primary border-t-2 border-primary'
+                  )}
+                >
+                  <item.icon 
+                    className={cn(
+                      'h-5 w-5',
+                      isActive ? 'text-primary' : 'text-gray-500'
+                    )} 
+                  />
+                  <span className={cn(
+                    'text-xs',
+                    isActive ? 'text-primary font-medium' : 'text-gray-500'
+                  )}>
+                    {item.name}
+                  </span>
+                </Button>
               </Link>
-            </li>
-            <li>
-              <Link href="/products" className="text-gray-400 hover:text-white">
-                Produits
-              </Link>
-            </li>
-            <li>
-              <Link href="/contact" className="text-gray-400 hover:text-white">
-                Contact
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-4">Suivez-nous</h3>
-          <div className="flex gap-4">
-            <a href="#" className="text-gray-400 hover:text-white">
-              <Facebook className="w-6 h-6" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white">
-              <Instagram className="w-6 h-6" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white">
-              <Twitter className="w-6 h-6" />
-            </a>
-          </div>
-        </div>
-      </div>
-      <div className="text-center mt-8 border-t border-gray-700 pt-4">
-        <p>
-          &copy; {new Date().getFullYear()} Ma Boutique de Tissus. Tous droits
-          réservés.
-        </p>
+            );
+          })}
+        </nav>
       </div>
     </footer>
   );
-}
+};
+
+export default DynamicFooter;
