@@ -5,15 +5,9 @@ import { useCartStore } from "@/store/cartStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "react-toastify";
-import {
-  ShoppingCart,
-  ChevronLeft,
-  ChevronRight,
-  ImageIcon,
-  Loader2,
-  Check,
-} from "lucide-react";
+import { ShoppingCart, ChevronLeft, ChevronRight, ImageIcon, Loader2, Check, Maximize } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +33,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
@@ -124,89 +119,65 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col">
-          <div className="relative aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden">
-            {product.images && product.images.length > 0 ? (
-              <>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentImageIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="relative w-full h-full"
-                  >
-                    <Image
-                      src={product.images[currentImageIndex]}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      onLoadingComplete={() => setIsImageLoading(false)}
-                      priority={currentImageIndex === 0}
-                    />
-                    {isImageLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                      </div>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-
-                {product.images.length > 1 && (
+          {/* MODALE D'APERÇU DE L'IMAGE */}
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <div className="relative aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden cursor-pointer">
+                {product.images.length > 0 ? (
                   <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white/90"
-                      onClick={prevImage}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white/90"
-                      onClick={nextImage}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                      {product.images.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            index === currentImageIndex
-                              ? "bg-white"
-                              : "bg-white/50"
-                          }`}
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentImageIndex}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="relative w-full h-full"
+                      >
+                        <Image
+                          src={product.images[currentImageIndex]}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          onLoadingComplete={() => setIsImageLoading(false)}
+                          priority={currentImageIndex === 0}
                         />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
-          </div>
+                        {isImageLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
 
-          <motion.div
-            animate={{ height: showFullDescription ? "auto" : "5rem" }}
-            className="relative mb-4 overflow-hidden"
-          >
-            <p className="text-sm text-gray-600">{product.description}</p>
-            {product.description.length > 150 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute bottom-0 right-0 bg-white"
-                onClick={() => setShowFullDescription(!showFullDescription)}
-              >
-                {showFullDescription ? "Voir moins" : "Voir plus"}
-              </Button>
-            )}
-          </motion.div>
+                    {/* Bouton pour zoomer */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-white/70 hover:bg-white"
+                    >
+                      <Maximize className="h-5 w-5" />
+                    </Button>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+            </DialogTrigger>
+
+            {/* CONTENU DE LA MODALE */}
+            <DialogContent className="max-w-3xl w-full bg-white p-4 rounded-lg">
+              <div className="relative w-full h-[70vh]">
+                <Image
+                  src={product.images[currentImageIndex]}
+                  alt={product.name}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <div className="mt-auto">
             <div className="flex justify-between items-center mb-4">
@@ -216,26 +187,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className={`text-sm ${stockStatus.color}`}>
                 {stockStatus.text}
               </span>
-            </div>
-
-            <div className="flex items-center gap-4 mb-4">
-              <Input
-                type="number"
-                min="1"
-                max={product.stock}
-                value={quantity}
-                onChange={handleQuantityChange}
-                className="w-20"
-                disabled={product.stock === 0}
-              />
-              <span className="text-sm text-gray-500">
-                mètre{quantity > 1 ? "s" : ""}
-              </span>
-              {quantity > 0 && (
-                <span className="text-sm text-gray-500 ml-auto">
-                  Total: {(product.price * quantity).toFixed(2)} €
-                </span>
-              )}
             </div>
 
             <Button
