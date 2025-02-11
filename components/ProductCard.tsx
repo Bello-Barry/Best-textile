@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
+import React, { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { ShoppingCart, ChevronLeft, ChevronRight, Maximize } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Product {
   id: number;
@@ -46,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       id: product.id.toString(),
       name: product.name,
       price: product.price,
-      quantity: ,
+      quantity: 1,
       images: product.images,
     });
 
@@ -122,49 +123,89 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   </Button>
                 </DialogTrigger>
 
+                {/* MODALE AVEC IMAGES + DÉTAILS */}
                 <DialogContent className="max-w-3xl w-full bg-white p-4 rounded-lg">
-                  <div className="relative w-full h-[70vh] flex items-center justify-center">
-                    <Image
-                      src={product.images[currentImageIndex]}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  {/* Boutons de navigation dans la modale */}
-                  {product.images.length > 1 && (
-                    <div className="absolute inset-0 flex justify-between items-center p-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={prevImage}
-                        className="bg-white/70 hover:bg-white"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={nextImage}
-                        className="bg-white/70 hover:bg-white"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Section Image */}
+                    <div className="relative w-full h-[70vh] flex items-center justify-center bg-gray-100">
+                      <Image
+                        src={product.images[currentImageIndex]}
+                        alt={product.name}
+                        fill
+                        className="object-contain"
+                      />
+                      {/* Navigation dans la modale */}
+                      {product.images.length > 1 && (
+                        <div className="absolute inset-0 flex justify-between items-center p-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={prevImage}
+                            className="bg-white/70 hover:bg-white"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={nextImage}
+                            className="bg-white/70 hover:bg-white"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Section Détails du Produit */}
+                    <ScrollArea className="max-h-[70vh] overflow-y-auto px-4">
+                      <h2 className="text-xl font-semibold">{product.name}</h2>
+                      <p className="text-gray-500">{product.type}</p>
+                      {product.subtype && (
+                        <p className="text-gray-400">{product.subtype}</p>
+                      )}
+
+                      <div className="mt-2">
+                        <p className="text-lg font-bold">
+                          {product.price.toFixed(2)} €/m
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            product.stock === 0
+                              ? "text-red-600"
+                              : product.stock <= 5
+                              ? "text-orange-600"
+                              : "text-green-600"
+                          }`}
+                        >
+                          {product.stock === 0
+                            ? "Rupture de stock"
+                            : product.stock <= 5
+                            ? "Stock limité"
+                            : "En stock"}
+                        </p>
+                      </div>
+
+                      <p className="mt-4 text-sm text-gray-600">
+                        {product.description}
+                      </p>
+
+                      <Button
+                        onClick={handleAddToCart}
+                        className="w-full mt-6 flex items-center gap-2"
+                        disabled={product.stock === 0}
+                      >
+                        <ShoppingCart className="h-5 w-5" />
+                        {product.stock === 0
+                          ? "Rupture de stock"
+                          : "Ajouter au panier"}
+                      </Button>
+                    </ScrollArea>
+                  </div>
                 </DialogContent>
               </Dialog>
             </>
           )}
-        </div>
-
-        {/* Infos et actions */}
-        <div className="mt-4 flex justify-between items-center">
-          <span className="text-lg font-bold">{product.price.toFixed(2)} €/m</span>
-          <Button onClick={handleAddToCart} className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            Ajouter au panier
-          </Button>
         </div>
       </CardContent>
     </Card>
