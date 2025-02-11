@@ -2,226 +2,149 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useAuthStore } from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Package,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  ShoppingCart,
-  Info,
-} from "lucide-react";
 import { toast } from "react-toastify";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface OrderItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Clock, CheckCircle, Package } from "lucide-react";
+import Link from "next/link";
 
 interface Order {
   id: string;
   status: "pending" | "validated" | "delivered";
   total_amount: number;
   created_at: string;
-  items: OrderItem[];
+  customer_name: string;
+  delivery_address: string;
+  phone_number: string;
+  items: any[];
+  user_id: string;
 }
 
-export default function CustomerOrdersPage() {
-  const { user } = useAuthStore();
+export default function UserOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      toast.error("Vous devez être connecté");
-      return;
-    }
-
-    const fetchOrders = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        // Parse the items JSON string for each order
-        const parsedOrders = data.map((order) => ({
-          ...order,
-          items: JSON.parse(order.items),
-        }));
-
-        setOrders(parsedOrders);
-      } catch (error) {
-        toast.error("Erreur lors du chargement des commandes");
-      } finally {
-        setLoading(false);
+    // Vérifier l'utilisateur connecté
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        fetchUserOrders(user.id);
+      } else {
+        toast.error("Veuillez vous connecter pour voir vos commandes");
       }
     };
 
-    fetchOrders();
-  }, [user]);
+    getCurrentUser();
+  }, []);
 
-  const getStatusConfig = (status: Order["status"]) => {
-    const statusMap = {
-      pending: {
-        label: "En attente",
-        color: "bg-yellow-500",
-        icon: Clock,
-      },
-      validated: {
-        label: "Validée",
-        color: "bg-blue-500",
-        icon: CheckCircle,
-      },
-      delivered: {
-        label: "Livrée",
-        color: "bg-green-500",
-        icon: Package,
-      },
-    };
-    return statusMap[status];
+  const fetchUserOrders = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setOrders(data as Order[]);
+    } catch (error) {
+      toast.error("Erreur lors du chargement de vos commandes.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderStatusBadge = (status: Order["status"]) => {
-    const config = getStatusConfig(status);
-    const StatusIcon = config.icon;
+  const getStatusBadge = (status: Order["status"]) => {
+    const statusConfig = {
+      pending: { color: "bg-yellow-500", icon: Clock, text: "En attente" },
+      validated: { color: "bg-blue-500", icon: CheckCircle, text: "Validée" },
+      delivered: { color: "bg-green-500", icon: Package, text: "Livrée" },
+    };
+
+    const config = statusConfig[status];
+    const Icon = config.icon;
 
     return (
-      <Badge className={`${config.color} text-white flex items-center gap-2`}>
-        <StatusIcon size={16} />
-        {config.label}
+      <Badge className={`${config.color} text-white flex items-center gap-1`}>
+        <Icon size={14} />
+        {config.text}
       </Badge>
     );
   };
 
-  const renderOrderDetails = (order: Order) => {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-lg font-semibold">Commande #{order.id}</p>
-            <p className="text-sm text-gray-500">
-              {new Date(order.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          {renderStatusBadge(order.status)}
-        </div>
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <ShoppingCart size={16} /> Détails des produits
-          </h4>
-          <ScrollArea className="h-64 pr-4">
-            {order.items.map((item, index) => (
-              <div
-                key={item.id || index}
-                className="flex justify-between items-center py-2 border-b last:border-b-0"
-              >
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-gray-500">
-                    Quantité : {item.quantity}
-                  </p>
-                </div>
-                <p className="font-semibold">{item.price.toFixed(2)}€</p>
-              </div>
-            ))}
-          </ScrollArea>
-        </div>
-
-        <div className="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
-          <p className="font-medium flex items-center gap-2">
-            <Info size={16} /> Total de la commande
-          </p>
-          <p className="text-xl font-bold">{order.total_amount.toFixed(2)}€</p>
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
+    return <div className="container mx-auto p-4">Chargement...</div>;
+  }
+
+  if (!userId) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="p-6">
+            <p>Veuillez vous connecter pour voir vos commandes.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package /> Mes Commandes
-          </CardTitle>
+          <CardTitle>Mes Commandes</CardTitle>
         </CardHeader>
         <CardContent>
           {orders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <AlertCircle className="mx-auto mb-4" size={48} />
-              <p>Vous n&apos;avez pas encore passé de commandes.</p>
-            </div>
+            <p>Vous n'avez pas encore de commandes.</p>
           ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Commande #{order.id}</span>
-                    {renderStatusBadge(order.status)}
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Numéro</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Détails</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>#{order.id}</TableCell>
+                    <TableCell>
                       {new Date(order.created_at).toLocaleDateString()}
-                    </div>
-                    <div className="font-semibold">
-                      Total : {order.total_amount.toFixed(2)}€
-                    </div>
-                  </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2 w-full"
-                        onClick={() => setSelectedOrder(order)}
+                    </TableCell>
+                    <TableCell>{order.total_amount}€</TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="text-blue-500 hover:text-blue-700 underline"
                       >
                         Voir les détails
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
-                      <DialogHeader>
-                        <DialogTitle>Détails de la commande</DialogTitle>
-                        <DialogDescription>
-                          Informations complètes sur votre commande
-                        </DialogDescription>
-                      </DialogHeader>
-                      {selectedOrder && renderOrderDetails(selectedOrder)}
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              ))}
-            </div>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
