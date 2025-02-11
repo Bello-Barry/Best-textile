@@ -156,7 +156,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="mt-auto">
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-bold">{product.price.toFixed(2)} €/m</span>
-              <Link href={`/app/product/${product.id}`} passHref>
+              <Link href={`/
+/products/${product.id}`} passHref>
                 <Button variant="link" className="text-blue-600">
                   Voir les détails
                 </Button>
