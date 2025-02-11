@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-toastify";
 import {
@@ -11,17 +11,12 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Package, History, Edit, ShoppingCart } from "lucide-react";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { User, Package, History, Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +37,8 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Schéma de validation du profil
 const profileSchema = z.object({
@@ -50,6 +47,7 @@ const profileSchema = z.object({
   address: z.string().optional(),
 });
 
+// Interface des données utilisateur
 interface UserProfile {
   id: string;
   email: string;
@@ -59,6 +57,7 @@ interface UserProfile {
   address?: string;
 }
 
+// Interface des commandes
 interface Order {
   id: string;
   status: "pending" | "validated" | "delivered";
@@ -76,9 +75,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Initialisation du formulaire de profil
+  // Initialisation du formulaire
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -95,12 +93,11 @@ export default function ProfilePage() {
     fetchData();
   }, []);
 
+  /** 🔹 Récupérer le profil utilisateur */
   const fetchUserProfile = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Non authentifié");
 
       const { data, error } = await supabase
         .from("profiles")
@@ -111,7 +108,6 @@ export default function ProfilePage() {
       if (error) throw error;
 
       setProfile(data);
-      // Mettre à jour les valeurs par défaut du formulaire
       form.reset({
         full_name: data.full_name,
         phone: data.phone || "",
@@ -122,21 +118,18 @@ export default function ProfilePage() {
     }
   };
 
+  /** 🔹 Récupérer les commandes utilisateur */
   const fetchUserOrders = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Non authentifié");
 
       const { data, error } = await supabase
         .from("orders")
-        .select(
-          `
-          *,
-          items (*)
-        `
-        )
+        .select(`
+          id, status, total, created_at,
+          items:order_items (id, product_name, quantity, price)
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -149,12 +142,11 @@ export default function ProfilePage() {
     }
   };
 
+  /** 🔹 Mettre à jour le profil utilisateur */
   const onSubmitProfile = async (values: z.infer<typeof profileSchema>) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Non authentifié");
 
       const { error } = await supabase
         .from("profiles")
@@ -164,12 +156,14 @@ export default function ProfilePage() {
       if (error) throw error;
 
       toast.success("Profil mis à jour avec succès");
-      await fetchUserProfile();
+      setProfile((prev) => (prev ? { ...prev, ...values } : null));
+      form.reset(values);
     } catch (error) {
       toast.error("Erreur lors de la mise à jour du profil");
     }
   };
 
+  /** 🔹 Rendre les statuts de commande plus lisibles */
   const getStatusBadge = (status: Order["status"]) => {
     const statusConfig = {
       pending: { color: "bg-yellow-500", text: "En attente" },
@@ -184,6 +178,16 @@ export default function ProfilePage() {
     );
   };
 
+  /** 🔹 Optimisation avec useMemo */
+  const pendingOrders = useMemo(
+    () => orders.filter((order) => order.status !== "delivered"),
+    [orders]
+  );
+  const deliveredOrders = useMemo(
+    () => orders.filter((order) => order.status === "delivered"),
+    [orders]
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -194,212 +198,43 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl space-y-6">
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User size={16} />
-            Profil
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
-            <Package size={16} />
-            Commandes
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History size={16} />
-            Historique
-          </TabsTrigger>
+      <Tabs defaultValue="profile">
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="profile"><User size={16} /> Profil</TabsTrigger>
+          <TabsTrigger value="orders"><Package size={16} /> Commandes</TabsTrigger>
+          <TabsTrigger value="history"><History size={16} /> Historique</TabsTrigger>
         </TabsList>
 
+        {/* Profil */}
         <TabsContent value="profile">
           <Card>
             <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <User />
-                  Mon Profil
-                </div>
+              <CardTitle>
+                <User /> Mon Profil
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Edit size={16} className="mr-2" /> Modifier
-                    </Button>
+                    <Button variant="outline" size="sm"><Edit size={16} /> Modifier</Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Modifier mon profil</DialogTitle>
-                    </DialogHeader>
+                    <DialogHeader><DialogTitle>Modifier mon profil</DialogTitle></DialogHeader>
                     <Form {...form}>
-                      <form
-                        onSubmit={form.handleSubmit(onSubmitProfile)}
-                        className="space-y-4"
-                      >
-                        <FormField
-                          control={form.control}
-                          name="full_name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Nom complet</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Votre nom complet"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Téléphone</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Votre numéro de téléphone"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Adresse</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Votre adresse" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex justify-end gap-2">
-                          <DialogClose asChild>
-                            <Button type="button" variant="outline">
-                              Annuler
-                            </Button>
-                          </DialogClose>
-                          <Button type="submit">Enregistrer</Button>
-                        </div>
+                      <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-4">
+                        <FormField name="full_name" control={form.control} render={({ field }) => (
+                          <FormItem><FormLabel>Nom complet</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        )}/>
+                        <FormField name="phone" control={form.control} render={({ field }) => (
+                          <FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        )}/>
+                        <FormField name="address" control={form.control} render={({ field }) => (
+                          <FormItem><FormLabel>Adresse</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        )}/>
+                        <Button type="submit">Enregistrer</Button>
                       </form>
                     </Form>
                   </DialogContent>
                 </Dialog>
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Nom complet</p>
-                <p className="font-medium">
-                  {profile?.full_name || "Non renseigné"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{profile?.email}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Téléphone</p>
-                <p className="font-medium">
-                  {profile?.phone || "Non renseigné"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Adresse</p>
-                <p className="font-medium">
-                  {profile?.address || "Non renseignée"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="orders">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart /> Commandes en cours
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {orders.filter((order) => order.status !== "delivered").length ===
-              0 ? (
-                <p className="text-center text-muted-foreground">
-                  Aucune commande en cours
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {orders
-                    .filter((order) => order.status !== "delivered")
-                    .map((order) => (
-                      <div
-                        key={order.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium">
-                            Commande #{order.id}
-                          </span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </div>
-                        <div className="mt-2 font-semibold">
-                          Total : {order.total}€
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History /> Historique des commandes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {orders.filter((order) => order.status === "delivered").length ===
-              0 ? (
-                <p className="text-center text-muted-foreground">
-                  Aucune commande livrée
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {orders
-                    .filter((order) => order.status === "delivered")
-                    .map((order) => (
-                      <div
-                        key={order.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium">
-                            Commande #{order.id}
-                          </span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </div>
-                        <div className="mt-2 font-semibold">
-                          Total : {order.total}€
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
