@@ -1,141 +1,67 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "react-toastify";
+import { Loader2, ShoppingCart, Heart } from "lucide-react";
+import ProductGallery from "@/components/ui/ProductGallery";
+import ProductDetails from "@/components/ui/ProductDetails";
 
-// Définir le schéma de validation
-const schema = z.object({
-  name: z.string().min(1, "Le nom est requis"),
-  description: z.string().min(1, "La description est requise"),
-  price: z.number().min(0, "Le prix doit être positif"),
-  stock: z.number().min(0, "Le stock doit être positif"),
-});
-
-// Créer un type à partir du schéma
-type ProductFormData = z.infer<typeof schema>;
-
-// Interface pour le produit
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-}
-
-export default function ProductDetailPage() {
+export default function ProductPage() {
   const { id } = useParams();
-  const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ProductFormData>({
-    resolver: zodResolver(schema),
-  });
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProduct = async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .single();
-
+      const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
       if (error) {
-        toast.error("Erreur lors du chargement du produit.");
+        toast.error("Produit introuvable.");
       } else {
         setProduct(data);
       }
+      setLoading(false);
     };
 
     fetchProduct();
   }, [id]);
 
-  const onSubmit = async (data: ProductFormData) => {
-    try {
-      const { error } = await supabase
-        .from("products")
-        .update(data)
-        .eq("id", id);
-
-      if (error) {
-        toast.error("Erreur lors de la mise à jour du produit.");
-      } else {
-        toast.success("Produit mis à jour avec succès !");
-        router.push("/admin/products");
-      }
-    } catch (error) {
-      toast.error("Une erreur est survenue.");
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!product) {
-    return <div>Chargement...</div>;
+    return <p className="text-center text-red-500 mt-4">Aucun produit trouvé.</p>;
   }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Modifier le produit</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label>Nom</label>
-          <input
-            defaultValue={product.name}
-            {...register("name")}
-            className="w-full border rounded px-2 py-1"
-          />
-          {errors.name && (
-            <p className="text-red-500">{errors.name.message?.toString()}</p>
-          )}
-        </div>
-        <div>
-          <label>Description</label>
-          <textarea
-            defaultValue={product.description}
-            {...register("description")}
-            className="w-full border rounded px-2 py-1"
-          />
-          {errors.description && (
-            <p className="text-red-500">
-              {errors.description.message?.toString()}
-            </p>
-          )}
-        </div>
-        <div>
-          <label>Prix (€/mètre)</label>
-          <input
-            type="number"
-            defaultValue={product.price}
-            {...register("price", { valueAsNumber: true })}
-            className="w-full border rounded px-2 py-1"
-          />
-          {errors.price && (
-            <p className="text-red-500">{errors.price.message?.toString()}</p>
-          )}
-        </div>
-        <div>
-          <label>Stock</label>
-          <input
-            type="number"
-            defaultValue={product.stock}
-            {...register("stock", { valueAsNumber: true })}
-            className="w-full border rounded px-2 py-1"
-          />
-          {errors.stock && (
-            <p className="text-red-500">{errors.stock.message?.toString()}</p>
-          )}
-        </div>
-        <Button type="submit">Mettre à jour</Button>
-      </form>
+      <ToastContainer />
+      <Card>
+        <CardHeader>
+          <CardTitle>{product.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProductGallery images={product.images} />
+          <ProductDetails product={product} />
+          <div className="flex gap-4 mt-4">
+            <Button className="flex-1">
+              <ShoppingCart className="mr-2 h-5 w-5" /> Ajouter au panier
+            </Button>
+            <Button variant="outline">
+              <Heart className="mr-2 h-5 w-5 text-red-500" /> Ajouter aux favoris
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
