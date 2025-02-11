@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { toast } from "react-toastify";
-import { ShoppingCart, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
+import { ShoppingCart, ChevronLeft, ChevronRight, Maximize, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Product {
   id: number;
@@ -29,186 +31,164 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCartStore();
+  const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    if (value < 1) return setQuantity(1);
+    if (value > product.stock) return setQuantity(product.stock);
+    setQuantity(value);
+  };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? product.images.length - 1 : prev - 1
-    );
+    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
   };
 
   const handleAddToCart = () => {
+    if (quantity > product.stock) {
+      toast.error("Stock insuffisant");
+      return;
+    }
+
     addToCart({
       id: product.id.toString(),
       name: product.name,
       price: product.price,
-      quantity: 1,
+      quantity,
       images: product.images,
     });
 
-    toast.success(`1 mètre de "${product.name}" ajouté au panier.`);
+    toast.success(
+      <div className="flex items-center">
+        <Check className="mr-2 h-5 w-5 text-green-500" />
+        {quantity} mètre{quantity > 1 ? "s" : ""} de "{product.name}" ajouté
+        {quantity > 1 ? "s" : ""} au panier
+      </div>,
+      {
+        icon: false,
+        progressClassName: "bg-green-500",
+      }
+    );
   };
 
   return (
-    <Card className="w-full max-w-sm mx-auto hover:shadow-lg transition-shadow duration-300">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold truncate">
-          {product.name}
-        </CardTitle>
-        <Badge variant="secondary">{product.type}</Badge>
-        {product.subtype && <Badge variant="outline">{product.subtype}</Badge>}
-      </CardHeader>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="h-full"
+    >
+      <Card className="w-full max-w-sm mx-auto hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg font-semibold truncate">{product.name}</CardTitle>
+              <div className="flex gap-2 mt-1">
+                <Badge variant="secondary">{product.type}</Badge>
+                {product.subtype && <Badge variant="outline">{product.subtype}</Badge>}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
 
-      <CardContent className="flex flex-col">
-        {/* Carrousel d'images */}
-        <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden">
-          {product.images.length > 0 && (
-            <>
+        <CardContent className="flex-1 flex flex-col">
+          <Dialog>
+            <DialogTrigger className="relative aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentImageIndex}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
                   className="relative w-full h-full"
                 >
                   <Image
                     src={product.images[currentImageIndex]}
                     alt={product.name}
                     fill
-                    className="object-cover"
-                    priority
+                    className="object-cover cursor-pointer"
                   />
                 </motion.div>
               </AnimatePresence>
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                <Maximize className="text-white h-8 w-8" />
+              </div>
+            </DialogTrigger>
 
-              {/* Navigation gauche/droite */}
-              {product.images.length > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/60 hover:bg-white"
-                    onClick={prevImage}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/60 hover:bg-white"
-                    onClick={nextImage}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </>
+            <DialogContent className="max-w-3xl">
+              <div className="relative w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={product.images[currentImageIndex]}
+                  alt={product.name}
+                  fill
+                  className="object-contain"
+                />
+                {product.images.length > 1 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white/90"
+                      onClick={prevImage}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white/90"
+                      onClick={nextImage}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div className="mt-auto">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-bold">{product.price.toFixed(2)} €/m</span>
+              <Link href={`/app/product/${product.id}`} passHref>
+                <Button variant="link" className="text-blue-600">
+                  Voir les détails
+                </Button>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <Input
+                type="number"
+                min="1"
+                max={product.stock}
+                value={quantity}
+                onChange={handleQuantityChange}
+                className="w-20"
+                disabled={product.stock === 0}
+              />
+              <span className="text-sm text-gray-500">mètre{quantity > 1 ? "s" : ""}</span>
+              {quantity > 0 && (
+                <span className="text-sm text-gray-500 ml-auto">
+                  Total: {(product.price * quantity).toFixed(2)} €
+                </span>
               )}
+            </div>
 
-              {/* Bouton d'agrandissement */}
-              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 bg-white/70 hover:bg-white"
-                    onClick={() => setIsModalOpen(true)}
-                  >
-                    <Maximize className="h-5 w-5" />
-                  </Button>
-                </DialogTrigger>
-
-                {/* MODALE AVEC IMAGES + DÉTAILS */}
-                <DialogContent className="max-w-3xl w-full bg-white p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Section Image */}
-                    <div className="relative w-full h-[70vh] flex items-center justify-center bg-gray-100">
-                      <Image
-                        src={product.images[currentImageIndex]}
-                        alt={product.name}
-                        fill
-                        className="object-contain"
-                      />
-                      {/* Navigation dans la modale */}
-                      {product.images.length > 1 && (
-                        <div className="absolute inset-0 flex justify-between items-center p-4">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={prevImage}
-                            className="bg-white/70 hover:bg-white"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={nextImage}
-                            className="bg-white/70 hover:bg-white"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Section Détails du Produit */}
-                    <ScrollArea className="max-h-[70vh] overflow-y-auto px-4">
-                      <h2 className="text-xl font-semibold">{product.name}</h2>
-                      <p className="text-gray-500">{product.type}</p>
-                      {product.subtype && (
-                        <p className="text-gray-400">{product.subtype}</p>
-                      )}
-
-                      <div className="mt-2">
-                        <p className="text-lg font-bold">
-                          {product.price.toFixed(2)} €/m
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            product.stock === 0
-                              ? "text-red-600"
-                              : product.stock <= 5
-                              ? "text-orange-600"
-                              : "text-green-600"
-                          }`}
-                        >
-                          {product.stock === 0
-                            ? "Rupture de stock"
-                            : product.stock <= 5
-                            ? "Stock limité"
-                            : "En stock"}
-                        </p>
-                      </div>
-
-                      <p className="mt-4 text-sm text-gray-600">
-                        {product.description}
-                      </p>
-
-                      <Button
-                        onClick={handleAddToCart}
-                        className="w-full mt-6 flex items-center gap-2"
-                        disabled={product.stock === 0}
-                      >
-                        <ShoppingCart className="h-5 w-5" />
-                        {product.stock === 0
-                          ? "Rupture de stock"
-                          : "Ajouter au panier"}
-                      </Button>
-                    </ScrollArea>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            <Button className="w-full" onClick={handleAddToCart} disabled={product.stock === 0}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              {product.stock === 0 ? "Rupture de stock" : "Ajouter au panier"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
