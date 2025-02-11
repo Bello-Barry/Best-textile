@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-toastify";
 import {
@@ -38,22 +38,7 @@ export default function UserOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Vérifier l'utilisateur connecté
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        fetchUserOrders(user.id);
-      } else {
-        toast.error("Veuillez vous connecter pour voir vos commandes");
-      }
-    };
-
-    getCurrentUser();
-  }, []);
-
-  const fetchUserOrders = async (userId: string) => {
+  const fetchUserOrders = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("orders")
@@ -68,7 +53,21 @@ export default function UserOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        fetchUserOrders(user.id);
+      } else {
+        toast.error("Veuillez vous connecter pour voir vos commandes.");
+      }
+    };
+
+    getCurrentUser();
+  }, [fetchUserOrders]);
 
   const getStatusBadge = (status: Order["status"]) => {
     const statusConfig = {
@@ -112,7 +111,7 @@ export default function UserOrdersPage() {
         </CardHeader>
         <CardContent>
           {orders.length === 0 ? (
-            <p>Vous n'avez pas encore de commandes.</p>
+            <p>Vous n&apos;avez pas encore de commandes.</p>
           ) : (
             <Table>
               <TableHeader>
