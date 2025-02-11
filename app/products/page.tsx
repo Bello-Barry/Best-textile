@@ -74,9 +74,8 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // Vérifie d'abord la connexion Supabase
       if (!supabase) {
-        throw new Error("La connexion à la base de données n'est pas établie");
+        throw new Error("Connexion à la base de données échouée.");
       }
 
       let query = supabase
@@ -91,66 +90,39 @@ export default function AdminProductsPage() {
       const { data, error } = await query;
 
       if (error) {
-        console.error("Erreur Supabase détaillée:", error);
-        throw new Error(
-          error.message || "Erreur lors de la récupération des produits"
-        );
+        throw new Error(error.message || "Erreur lors de la récupération.");
       }
 
-      if (!data) {
-        throw new Error("Aucune donnée reçue de la base de données");
-      }
-
-      setProducts(data);
+      setProducts(data || []);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur détaillée lors du chargement des produits:", error);
-      toast.error(`Erreur lors du chargement des produits: ${errorMessage}`);
+      toast.error(
+        `Erreur lors du chargement : ${
+          error instanceof Error ? error.message : "Inconnue"
+        }`
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Cette fonction useEffect doit être modifiée pour gérer les dépendances correctement
   useEffect(() => {
-    const controller = new AbortController();
-
     fetchProducts();
-
-    return () => {
-      controller.abort();
-    };
-  }, [filterType, sortField, sortDirection]); // Ajouter les dépendances explicitement
+  }, [filterType, sortField, sortDirection]);
 
   const handleDelete = async (id: string) => {
     try {
       const productToDelete = products.find((p) => p.id === id);
+      if (!productToDelete) throw new Error("Produit introuvable.");
 
-      if (!productToDelete) {
-        throw new Error("Produit non trouvé");
-      }
-
-      // Supprimer les images du storage
       if (productToDelete.images?.length) {
         for (const imageUrl of productToDelete.images) {
           const imagePath = imageUrl.split("/").pop();
           if (imagePath) {
-            const { error: storageError } = await supabase.storage
-              .from("images") // Utiliser "images" au lieu de "products"
-              .remove([imagePath]);
-
-            if (storageError) {
-              console.error(
-                "Erreur lors de la suppression de l'image:",
-                storageError
-              );
-            }
+            await supabase.storage.from("images").remove([imagePath]);
           }
         }
       }
 
-      // Supprimer le produit de la base de données
       const { error: deleteError } = await supabase
         .from("products")
         .delete()
@@ -158,13 +130,14 @@ export default function AdminProductsPage() {
 
       if (deleteError) throw deleteError;
 
-      setProducts(products.filter((product) => product.id !== id));
+      setProducts((prev) => prev.filter((product) => product.id !== id));
       toast.success("Produit supprimé avec succès.");
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur lors de la suppression:", error);
-      toast.error(`Erreur lors de la suppression du produit: ${errorMessage}`);
+      toast.error(
+        `Erreur lors de la suppression : ${
+          error instanceof Error ? error.message : "Inconnue"
+        }`
+      );
     }
   };
 
@@ -177,22 +150,9 @@ export default function AdminProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter((product) =>
-    Object.values(product).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
   const getSortIcon = (field: keyof Product) => {
     if (field !== sortField) return <ArrowUpDown className="h-4 w-4" />;
     return sortDirection === "asc" ? "↑" : "↓";
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-    }).format(price);
   };
 
   return (
@@ -203,8 +163,7 @@ export default function AdminProductsPage() {
             <div>
               <CardTitle>Gestion des Produits</CardTitle>
               <CardDescription>
-                {filteredProducts.length} produit
-                {filteredProducts.length !== 1 && "s"} au total
+                {products.length} produit{products.length !== 1 && "s"}
               </CardDescription>
             </div>
             <Link href="/admin/products/new">
@@ -217,17 +176,12 @@ export default function AdminProductsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Rechercher un produit..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
+            <Input
+              placeholder="Rechercher..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filtrer par type" />
@@ -236,7 +190,6 @@ export default function AdminProductsPage() {
                 <SelectItem value="all">Tous les types</SelectItem>
                 <SelectItem value="soie">Soie</SelectItem>
                 <SelectItem value="bazin">Bazin</SelectItem>
-                <SelectItem value="autre">Autre</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -250,94 +203,20 @@ export default function AdminProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead
-                      onClick={() => toggleSort("name")}
-                      className="cursor-pointer"
-                    >
-                      Nom {getSortIcon("name")}
-                    </TableHead>
-                    <TableHead
-                      onClick={() => toggleSort("type")}
-                      className="cursor-pointer"
-                    >
-                      Type {getSortIcon("type")}
-                    </TableHead>
-                    <TableHead
-                      onClick={() => toggleSort("price")}
-                      className="cursor-pointer"
-                    >
-                      Prix {getSortIcon("price")}
-                    </TableHead>
-                    <TableHead
-                      onClick={() => toggleSort("stock")}
-                      className="cursor-pointer"
-                    >
-                      Stock {getSortIcon("stock")}
-                    </TableHead>
+                    <TableHead>Nom {getSortIcon("name")}</TableHead>
+                    <TableHead>Type {getSortIcon("type")}</TableHead>
+                    <TableHead>Prix {getSortIcon("price")}</TableHead>
+                    <TableHead>Stock {getSortIcon("stock")}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="relative w-16 h-16 rounded overflow-hidden">
-                          {product.images?.[0] ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <ImageOff className="h-6 w-6 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {product.description}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            product.type === "soie"
-                              ? "default"
-                              : product.type === "bazin"
-                              ? "secondary"
-                              : "outline"
-                          }
-                        >
-                          {product.type}
-                        </Badge>
-                        {product.subtype && (
-                          <Badge variant="outline" className="ml-2">
-                            {product.subtype}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{formatPrice(product.price)}/m</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            product.stock === 0 ? "destructive" : "default"
-                          }
-                          className={
-                            product.stock <= 5 && product.stock > 0
-                              ? "bg-yellow-500 hover:bg-yellow-600 text-white" // Style pour stock bas
-                              : product.stock > 5
-                              ? "bg-green-500 hover:bg-green-600 text-white" // Style pour stock normal
-                              : ""
-                          }
-                        >
-                          {product.stock}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.type}</TableCell>
+                      <TableCell>{product.price}€</TableCell>
+                      <TableCell>{product.stock}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Link href={`/admin/products/${product.id}`}>
                           <Button variant="outline" size="sm">
@@ -351,20 +230,10 @@ export default function AdminProductsPage() {
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Confirmer la suppression
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer{" "}
-                                {product.name} ? Cette action est irréversible.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Annuler</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDelete(product.id)}
-                                className="bg-red-600 hover:bg-red-700"
                               >
                                 Supprimer
                               </AlertDialogAction>
