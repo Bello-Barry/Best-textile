@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-toastify";
 import {
@@ -19,16 +19,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, Package } from "lucide-react";
-import Link from "next/link";
 
 interface Order {
   id: string;
   status: "pending" | "validated" | "delivered";
-  total_amount: number;
+  total: number;
   created_at: string;
-  customer_name: string;
-  delivery_address: string;
-  phone_number: string;
+  name: string;
+  address: string;
+  phone: string;
   items: any[];
   user_id: string;
 }
@@ -36,9 +35,30 @@ interface Order {
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
-  const fetchUserOrders = useCallback(async (userId: string) => {
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) {
+        setUser(user);
+        fetchUserOrders(user.id);
+      } else {
+        // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+        window.location.href = '/login';
+      }
+    } catch (error: any) {
+      toast.error("Erreur d'authentification");
+      console.error('Error:', error.message);
+    }
+  };
+
+  const fetchUserOrders = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("orders")
@@ -47,27 +67,15 @@ export default function UserOrdersPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setOrders(data as Order[]);
-    } catch (error) {
-      toast.error("Erreur lors du chargement de vos commandes.");
+      
+      setOrders(data || []);
+    } catch (error: any) {
+      toast.error("Erreur lors du chargement des commandes");
+      console.error('Error:', error.message);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        fetchUserOrders(user.id);
-      } else {
-        toast.error("Veuillez vous connecter pour voir vos commandes.");
-      }
-    };
-
-    getCurrentUser();
-  }, [fetchUserOrders]);
+  };
 
   const getStatusBadge = (status: Order["status"]) => {
     const statusConfig = {
@@ -88,58 +96,52 @@ export default function UserOrdersPage() {
   };
 
   if (loading) {
-    return <div className="container mx-auto p-4">Chargement...</div>;
-  }
-
-  if (!userId) {
     return (
-      <div className="container mx-auto p-4">
-        <Card>
-          <CardContent className="p-6">
-            <p>Veuillez vous connecter pour voir vos commandes.</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Chargement de vos commandes...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes Commandes</CardTitle>
+      <Card className="shadow-lg">
+        <CardHeader className="border-b">
+          <CardTitle className="text-2xl">Mes Commandes</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {orders.length === 0 ? (
-            <p>Vous n&apos;avez pas encore de commandes.</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                Vous n'avez pas encore passé de commande.
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Numéro</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Détails</TableHead>
+                  <TableHead className="font-semibold">N° Commande</TableHead>
+                  <TableHead className="font-semibold">Date</TableHead>
+                  <TableHead className="font-semibold">Total</TableHead>
+                  <TableHead className="font-semibold">Statut</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>#{order.id}</TableCell>
+                  <TableRow key={order.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">#{order.id}</TableCell>
                     <TableCell>
-                      {new Date(order.created_at).toLocaleDateString()}
+                      {new Date(order.created_at).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
                     </TableCell>
-                    <TableCell>{order.total_amount}€</TableCell>
+                    <TableCell>{order.total.toFixed(2)}€</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="text-blue-500 hover:text-blue-700 underline"
-                      >
-                        Voir les détails
-                      </Link>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -149,4 +151,4 @@ export default function UserOrdersPage() {
       </Card>
     </div>
   );
-}
+    }
