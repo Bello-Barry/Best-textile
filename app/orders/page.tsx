@@ -1,33 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-toastify";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, Package } from "lucide-react";
 
 interface Order {
   id: string;
   status: "pending" | "validated" | "delivered";
-  total: number;
+  total_amount: number;
   created_at: string;
-  name: string;
-  address: string;
-  phone: string;
+  customer_name: string;
+  delivery_address: string;
+  phone_number: string;
   items: any[];
   user_id: string;
 }
@@ -37,8 +25,7 @@ export default function UserOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
@@ -46,19 +33,17 @@ export default function UserOrdersPage() {
         setUser(user);
         fetchUserOrders(user.id);
       } else {
-        // Redirect to login page if user is not authenticated
         window.location.href = '/login';
       }
     } catch (error: any) {
       toast.error("Erreur d'authentification");
       console.error('Error:', error.message);
     }
-  };
+  }, []);
 
-useEffect(() => {
+  useEffect(() => {
     checkUser();
   }, [checkUser]);
-
 
   const fetchUserOrders = async (userId: string) => {
     try {
@@ -69,11 +54,12 @@ useEffect(() => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log("Fetched orders:", data);
 
       setOrders(data || []);
     } catch (error: any) {
       toast.error("Erreur lors du chargement des commandes");
-      console.error('Error:', error.message);
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -142,7 +128,7 @@ useEffect(() => {
                         year: 'numeric'
                       })}
                     </TableCell>
-                    <TableCell>{order.total.toFixed(2)}€</TableCell>
+                    <TableCell>{order.total_amount.toFixed(2)}€</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                   </TableRow>
                 ))}
@@ -153,4 +139,4 @@ useEffect(() => {
       </Card>
     </div>
   );
-      }
+}
