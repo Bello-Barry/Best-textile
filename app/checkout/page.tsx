@@ -8,22 +8,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { useCartStore } from "@/store/cartStore";
 import { toast } from "react-toastify";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -40,9 +27,8 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCartStore();
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate total amount
   const total = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -58,74 +44,48 @@ export default function CheckoutPage() {
     },
   });
 
-  const addDebugInfo = (info: string) => {
-    setDebugInfo((prev) => prev + "\n" + info);
-    console.log(info);
-  };
-
   const onSubmit = async (formData: CheckoutFormData) => {
-    setDebugInfo(""); // Reset debug info
-
+    setIsSubmitting(true);
     try {
-      addDebugInfo("Début de la soumission du formulaire");
-
-      if (!cartItems || cartItems.length === 0) {
-        throw new Error("Le panier est vide");
-      }
-
-      addDebugInfo("Préparation des données de commande");
-
-      // Test de connexion Supabase
-      try {
-        const { error: testError } = await supabase
-          .from("orders")
-          .select("id")
-          .limit(1);
-
-        if (testError) {
-          addDebugInfo(
-            `Erreur de connexion Supabase: ${JSON.stringify(testError)}`
-          );
-          throw testError;
-        }
-        addDebugInfo("Connexion Supabase OK");
-      } catch (testError) {
-        addDebugInfo(
-          `Erreur lors du test de connexion: ${JSON.stringify(testError)}`
-        );
-        throw testError;
-      }
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Veuillez vous connecter avant de commander");
 
       const orderData = {
         customer_name: formData.name,
         delivery_address: formData.address,
         phone_number: formData.phone,
         payment_method: formData.paymentMethod,
-        items: JSON.stringify(cartItems), // Serialize items to avoid JSONB issues
-        total_amount: total, // Ensure total is a number
+        items: cartItems.map(item => ({
+          ...item,
+          id: item.id || crypto.randomUUID()
+        })),
+        total_amount: total,
         status: "pending",
-        created_at: new Date().toISOString(),
+        user_id: user.id,
       };
 
-      addDebugInfo(`Données à envoyer: ${JSON.stringify(orderData)}`);
-
-      // Tentative d'insertion
       const { error } = await supabase.from("orders").insert([orderData]);
 
-      if (error) {
-        addDebugInfo(
-          `Erreur Supabase lors de l'insertion: ${JSON.stringify(error)}`
-        );
-        throw error;
-      }
+      if (error) throw error;
 
-      addDebugInfo("Commande créée avec succès");
-      toast.success("Commande passée avec succès !");
+      toast.success("Commande validée avec succès !");
       clearCart();
-      form.reset();
+
+      // Redirection WhatsApp
+      const whatsappMessage = encodeURIComponent(
+        `Nouvelle commande #${Date.now()}\n` +
+        `Nom: ${formData.name}\n` +
+        `Adresse: ${formData.address}\n` +
+        `Téléphone: ${formData.phone}\n` +
+        `Total: ${total.toFixed(2)}€`
+      );
+      window.location.href = `https://wa.me/+242065835337?text=${whatsappMessage}`;
+
     } catch (error: any) {
-      addDebugInfo(`Erreur finale: ${JSON.stringify(error)}`);
-      toast.error(error.message || "Une erreur est survenue");
+      toast.error(error.message || "Erreur lors de la commande");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -173,7 +133,7 @@ export default function CheckoutPage() {
                   <FormItem>
                     <FormLabel>Numéro de téléphone</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} type="tel" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -186,10 +146,7 @@ export default function CheckoutPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Méthode de paiement</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir un mode de paiement" />
@@ -205,18 +162,14 @@ export default function CheckoutPage() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Traitement...
                   </>
                 ) : (
-                  `Confirmer la commande (${total}€)`
+                  `Confirmer la commande (${total.toFixed(2)}€)`
                 )}
               </Button>
             </form>
