@@ -39,7 +39,7 @@ export default function UserOrdersPage() {
 
   useEffect(() => {
     checkUser();
-  }, []);
+  }, [checkUser]);
 
   const checkUser = async () => {
     try {
@@ -49,7 +49,7 @@ export default function UserOrdersPage() {
         setUser(user);
         fetchUserOrders(user.id);
       } else {
-        // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+        // Redirect to login page if user is not authenticated
         window.location.href = '/login';
       }
     } catch (error: any) {
@@ -67,7 +67,7 @@ export default function UserOrdersPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       setOrders(data || []);
     } catch (error: any) {
       toast.error("Erreur lors du chargement des commandes");
@@ -116,7 +116,7 @@ export default function UserOrdersPage() {
           {orders.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">
-                Vous n'avez pas encore passé de commande.
+                Vous n&#39;avez pas encore passé de commande.
               </p>
             </div>
           ) : (
@@ -151,4 +151,4 @@ export default function UserOrdersPage() {
       </Card>
     </div>
   );
-    }
+      }
