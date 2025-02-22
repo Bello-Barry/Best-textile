@@ -37,10 +37,7 @@ export default function UserOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    checkUser();
-  }, [checkUser]);
-
+  
   const checkUser = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -57,6 +54,11 @@ export default function UserOrdersPage() {
       console.error('Error:', error.message);
     }
   };
+
+useEffect(() => {
+    checkUser();
+  }, [checkUser]);
+
 
   const fetchUserOrders = async (userId: string) => {
     try {
