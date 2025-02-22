@@ -9,11 +9,6 @@ export const supabase = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       persistSession: true
-    },
-    global: {
-      redirectTo: 'https://best-textile.vercel.app'
     }
   }
 )
-
-
