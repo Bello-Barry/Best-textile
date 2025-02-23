@@ -70,7 +70,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <div className="flex items-center">
         <Check className="mr-2 h-5 w-5 text-green-500" />
         {quantity.toFixed(1)} {unitLabel}
-        {quantity > 1 ? "s" : ""} de "{product.name}" ajouté
+        {quantity > 1 ? "s" : ""} de &quot;{product.name}&quot; ajouté
         {quantity > 1 ? "s" : ""} au panier
       </div>,
       { icon: false, progressClassName: "bg-green-500" }
