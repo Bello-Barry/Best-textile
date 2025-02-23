@@ -1,3 +1,4 @@
+// app/admin/products/new/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -44,7 +45,13 @@ const schema = z.object({
   fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
   unit: z.enum(["mètre", "rouleau"]),
-  images: z.array(z.string().url()).min(1, "Au moins une image est requise")
+  images: z.array(
+    z.string().refine(url => 
+      url.startsWith('https://') && 
+      url.includes('.supabase.co/storage/v1/object/public/images'),
+      "URL d'image invalide"
+    )
+  ).min(1, "Au moins une image est requise")
 }).superRefine((data, ctx) => {
   if (isFabricType(data.fabricType)) {
     if (!isFabricSubtype(data.fabricType, data.fabricSubtype)) {
@@ -79,7 +86,7 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: undefined as unknown as FabricType,
+      fabricType: "" as unknown as FabricType,
       fabricSubtype: "",
       unit: "mètre",
       images: []
@@ -126,14 +133,19 @@ export default function NewProductPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>Nouveau produit textile</CardTitle>
+    <div className="container mx-auto p-4 lg:p-6 max-w-4xl">
+      <Card className="shadow-lg">
+        <CardHeader className="border-b">
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            Nouveau produit textile
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form 
+              onSubmit={form.handleSubmit(handleSubmit)} 
+              className="space-y-6 lg:space-y-8"
+            >
               <SelectFabric
                 selectedType={selectedType}
                 onTypeChange={setSelectedType}
@@ -143,17 +155,20 @@ export default function NewProductPage() {
                 onUnitChange={setSelectedUnit}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom du produit</FormLabel>
+                      <FormLabel className="text-gray-700">Nom du produit</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input 
+                          {...field} 
+                          className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -162,16 +177,19 @@ export default function NewProductPage() {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prix ({selectedUnit === "rouleau" ? "par rouleau" : "au mètre"})</FormLabel>
+                      <FormLabel className="text-gray-700">
+                        Prix ({selectedUnit === "rouleau" ? "par rouleau" : "au mètre"})
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="0.01"
                           {...field}
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseFloat(e.target.value))}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -182,30 +200,37 @@ export default function NewProductPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-gray-700">Description</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={4} />
+                      <Textarea 
+                        {...field} 
+                        rows={4} 
+                        className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                 <FormField
                   control={form.control}
                   name="stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Stock ({selectedUnit === "rouleau" ? "rouleaux" : "mètres"})</FormLabel>
+                      <FormLabel className="text-gray-700">
+                        Stock ({selectedUnit === "rouleau" ? "rouleaux" : "mètres"})
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           {...field}
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -214,7 +239,7 @@ export default function NewProductPage() {
                   name="images"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Images</FormLabel>
+                      <FormLabel className="text-gray-700">Images</FormLabel>
                       <FormControl>
                         <ImageUploader
                           onUpload={(urls: string[]) => field.onChange(urls)}
@@ -222,16 +247,20 @@ export default function NewProductPage() {
                           maxFiles={5}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 transition-colors h-12 text-lg"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Création en cours...
                   </>
                 ) : (
