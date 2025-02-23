@@ -71,6 +71,79 @@ export default function NewProductPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
+"use client";
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import ImageUploader from "@/components/ImageUploader";
+import SelectFabric from "@/components/SelectFabric";
+import { 
+  FabricType, 
+  FabricSubtype, 
+  FabricUnit,
+  FABRIC_CONFIG 
+} from "@/types/fabric-config";
+
+const schema = z.object({
+  name: z.string().min(1, "Le nom est requis"),
+  description: z.string().min(1, "La description est requise"),
+  price: z.coerce.number().min(0.1, "Le prix doit être positif"),
+  stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
+  fabricType: z.string().min(1, "Le type de tissu est requis"),
+  fabricSubtype: z.string()
+    .min(1, "La variante est requise")
+    .refine((val, ctx) => {
+      const type = ctx.parent.fabricType as FabricType;
+      return FABRIC_CONFIG[type]?.subtypes.includes(val) ?? false;
+    }, "Variante invalide pour ce type de tissu"),
+  unit: z.string().min(1, "L'unité est requise"),
+  images: z.array(z.string()).min(1, "Au moins une image est requise")
+});
+
+type FormValues = z.infer<typeof schema>;
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedType, setSelectedType] = useState<FabricType | null>(null);
+  const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
+  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
+
+  useEffect(() => {
+    if (selectedType) {
+      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      setSelectedUnit(defaultUnit);
+      form.setValue("unit", defaultUnit);
+    }
+  }, [selectedType, form]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
       description: "",
       price: 0,
       stock: 0,
