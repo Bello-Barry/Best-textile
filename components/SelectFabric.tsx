@@ -7,7 +7,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FABRIC_CONFIG, FabricType, FabricSubtype, FabricUnit } from "@/types/fabric-config";
+import { 
+  FABRIC_CONFIG, 
+  FabricType, 
+  FabricSubtype, 
+  FabricUnit,
+  isFabricType,
+  isFabricSubtype
+} from "@/types/fabric-config";
 
 type SelectFabricProps = {
   selectedType: FabricType | null;
@@ -26,16 +33,24 @@ export default function SelectFabric({
   selectedUnit,
   onUnitChange
 }: SelectFabricProps) {
+  const handleTypeChange = (value: string) => {
+    if (isFabricType(value)) {
+      onTypeChange(value);
+    }
+  };
+
+  const handleSubtypeChange = (value: string) => {
+    if (selectedType && isFabricSubtype(selectedType, value)) {
+      onSubtypeChange(value);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
         <label className="block text-sm font-medium mb-2">Type de tissu</label>
-        <Select 
-          value={selectedType || ""} 
-          onValueChange={onTypeChange}
-          aria-label="Sélectionner le type de tissu"
-        >
-          <SelectTrigger aria-label="Type de tissu">
+        <Select value={selectedType || ""} onValueChange={handleTypeChange}>
+          <SelectTrigger>
             <SelectValue placeholder="Choisir un tissu" />
           </SelectTrigger>
           <SelectContent>
@@ -52,11 +67,10 @@ export default function SelectFabric({
         <label className="block text-sm font-medium mb-2">Variante</label>
         <Select 
           value={selectedSubtype} 
-          onValueChange={onSubtypeChange}
+          onValueChange={handleSubtypeChange}
           disabled={!selectedType}
-          aria-label="Sélectionner la variante"
         >
-          <SelectTrigger aria-label="Variante du tissu">
+          <SelectTrigger>
             <SelectValue placeholder="Choisir une variante" />
           </SelectTrigger>
           <SelectContent>
@@ -73,11 +87,10 @@ export default function SelectFabric({
         <label className="block text-sm font-medium mb-2">Unité</label>
         <Select 
           value={selectedUnit} 
-          onValueChange={onUnitChange}
+          onValueChange={value => onUnitChange(value as FabricUnit)}
           disabled={!selectedType}
-          aria-label="Sélectionner l'unité"
         >
-          <SelectTrigger aria-label="Unité de mesure">
+          <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
