@@ -46,7 +46,7 @@ const schema = z.object({
   unit: z.enum(["mètre", "rouleau"]),
   images: z.array(z.string().url()).min(1, "Au moins une image est requise")
 }).superRefine((data, ctx) => {
-  if (isFabricType(data.fabricType) {
+  if (isFabricType(data.fabricType)) {
     if (!isFabricSubtype(data.fabricType, data.fabricSubtype)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -136,11 +136,11 @@ export default function NewProductPage() {
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={(type) => setSelectedType(type)}
+                onTypeChange={setSelectedType}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={(subtype) => setSelectedSubtype(subtype)}
+                onSubtypeChange={setSelectedSubtype}
                 selectedUnit={selectedUnit}
-                onUnitChange={(unit) => setSelectedUnit(unit)}
+                onUnitChange={setSelectedUnit}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
