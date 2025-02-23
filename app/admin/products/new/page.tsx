@@ -1,8 +1,6 @@
-// app/admin/products/new/page.tsx
-
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,6 +34,7 @@ import {
   FABRIC_CONFIG 
 } from "@/types/fabric-config";
 
+// Schéma de validation avec Zod
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -43,19 +42,27 @@ const schema = z.object({
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().min(1, "Le type de tissu est requis"),
   fabricSubtype: z.string()
-  .min(1, "La variante est requise")
-  .superRefine((val, ctx) => {
-    const type = (ctx as any)?.parent?.fabricType as FabricType;
-    if (!FABRIC_CONFIG[type]?.subtypes.includes(val)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Variante invalide pour ce type de tissu"
-      });
-    }
-  })
+    .min(1, "La variante est requise")
+    .superRefine((val, ctx) => {
+      const type = ctx.parent?.fabricType as FabricType;
+      if (type && !FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Variante invalide pour ce type de tissu"
+        });
+      }
+    }),
+  unit: z.enum(["mètre", "rouleau"] as const),
+  images: z.array(z.string()).optional().default([])
 });
 
 type FormValues = z.infer<typeof schema>;
+
+interface ProductMetadata {
+  fabricType: FabricType;
+  fabricSubtype: FabricSubtype;
+  unit: FabricUnit;
+}
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -63,14 +70,6 @@ export default function NewProductPage() {
   const [selectedType, setSelectedType] = useState<FabricType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
   const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
-
-  useEffect(() => {
-    if (selectedType) {
-      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
-      setSelectedUnit(defaultUnit);
-      form.setValue("unit", defaultUnit);
-    }
-  }, [selectedType, form]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -86,16 +85,26 @@ export default function NewProductPage() {
     }
   });
 
+  useEffect(() => {
+    if (selectedType) {
+      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      setSelectedUnit(defaultUnit);
+      form.setValue("unit", defaultUnit);
+    }
+  }, [selectedType, form]);
+
   const handleSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
+      const metadata: ProductMetadata = {
+        fabricType: selectedType as FabricType,
+        fabricSubtype: selectedSubtype as FabricSubtype,
+        unit: selectedUnit
+      };
+
       const { error } = await supabase.from("products").insert([{
         ...values,
-        metadata: {
-          fabricType: selectedType,
-          fabricSubtype: selectedSubtype,
-          unit: selectedUnit
-        }
+        metadata
       }]);
 
       if (error) throw error;
@@ -121,18 +130,18 @@ export default function NewProductPage() {
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={(type) => {
+                onTypeChange={(type: FabricType) => {
                   setSelectedType(type);
                   setSelectedSubtype("");
                   form.setValue("fabricType", type);
                 }}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={(subtype) => {
+                onSubtypeChange={(subtype: FabricSubtype) => {
                   setSelectedSubtype(subtype);
                   form.setValue("fabricSubtype", subtype);
                 }}
                 selectedUnit={selectedUnit}
-                onUnitChange={(unit) => {
+                onUnitChange={(unit: FabricUnit) => {
                   setSelectedUnit(unit);
                   form.setValue("unit", unit);
                 }}
@@ -212,7 +221,7 @@ export default function NewProductPage() {
                       <FormLabel>Images</FormLabel>
                       <FormControl>
                         <ImageUploader
-                          onUpload={(urls) => field.onChange(urls)}
+                          onUpload={(urls: string[]) => field.onChange(urls)}
                           bucket="products"
                           maxFiles={5}
                         />
@@ -239,4 +248,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-      }
+                             }
