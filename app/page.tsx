@@ -24,44 +24,36 @@ const LandingPage = () => {
   ]);
 
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          stock,
-          images,
-          fabricType,
-          unit,
-          created_at,
-          category: type,
-          subtype
-        `)
-        .limit(4)
-        .order("created_at", { ascending: false });
+  const fetchFeaturedProducts = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        description,
+        price,
+        stock,
+        images,
+        fabricType,
+        fabricSubtype,
+        unit,
+        created_at
+      `)
+      .limit(4)
+      .order("created_at", { ascending: false });
 
-      if (data) {
-        const formattedProducts: Product[] = data.map((product) => ({
-          id: product.id.toString(),
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          stock: product.stock,
-          images: product.images || [],
-          fabricType: product.fabricType || product.category || "Non catégorisé",
-          unit: product.unit || "mètre",
-          type: product.category,
-          subtype: product.subtype
-        }));
-        setFeaturedProducts(formattedProducts);
-      }
-    };
-
-    fetchFeaturedProducts();
-  }, []);
+    if (data) {
+      const formattedProducts: Product[] = data.map((product) => ({
+        ...product,
+        id: product.id.toString(),
+        fabricType: product.fabricType || "Non catégorisé",
+        unit: product.unit || "mètre"
+      }));
+      setFeaturedProducts(formattedProducts);
+    }
+  };
+  fetchFeaturedProducts();
+}, []);
 
   return (
     <div className="min-h-screen">
