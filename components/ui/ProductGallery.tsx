@@ -5,10 +5,10 @@ import Image from "next/image";
 
 interface ProductGalleryProps {
   images: string[];
-  alt: string;
+  alt: string; // Rendons la prop alt optionnelle avec une valeur par défaut
 }
 
-export default function ProductGallery({ images, alt }: ProductGalleryProps) {
+export default function ProductGallery({ images, alt = "Gallery produit" }: ProductGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(images[0]);
 
   return (
