@@ -28,34 +28,34 @@ import { Loader2 } from "lucide-react";
 import ImageUploader from "@/components/ImageUploader";
 import SelectFabric from "@/components/SelectFabric";
 import { 
-  FabricType, 
-  FabricSubtype, 
-  FabricUnit,
-  FABRIC_CONFIG 
+  FABRIC_CONFIG,
+  type FabricType,
+  type FabricSubtype,
+  type FabricUnit
 } from "@/types/fabric-config";
 
-// Schéma de validation avec Zod
+// Schéma de validation Zod avec typage fort
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
   price: z.coerce.number().min(0.1, "Le prix doit être positif"),
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
-  fabricType: z.string().min(1, "Le type de tissu est requis"),
-  fabricSubtype: z.string()
-    .min(1, "La variante est requise")
-    .refine((val, ctx) => {
-      const type = ctx.parent.fabricType as FabricType;
-      if (!FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Variante invalide pour ce type de tissu"
-        });
-        return false;
-      }
-      return true;
-    }),
+  fabricType: z.string().refine((val): val is FabricType => {
+    return Object.keys(FABRIC_CONFIG).includes(val);
+  }, "Type de tissu invalide"),
+  fabricSubtype: z.string().superRefine((val, ctx) => {
+    const type = ctx.parent.fabricType as FabricType;
+    const validSubtypes = FABRIC_CONFIG[type]?.subtypes;
+    
+    if (!validSubtypes?.includes(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Variante invalide pour ce type de tissu"
+      });
+    }
+  }),
   unit: z.enum(["mètre", "rouleau"] as const),
-  images: z.array(z.string()).optional().default([])
+  images: z.array(z.string()).min(1, "Au moins une image est requise")
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -99,7 +99,7 @@ export default function NewProductPage() {
     setIsSubmitting(true);
     try {
       const metadata: ProductMetadata = {
-        fabricType: selectedType as FabricType,
+        fabricType: selectedType!,
         fabricSubtype: selectedSubtype as FabricSubtype,
         unit: selectedUnit
       };
@@ -250,4 +250,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-            }
+                                         }
