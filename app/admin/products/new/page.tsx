@@ -44,7 +44,8 @@ const schema = z.object({
   fabricSubtype: z.string()
     .min(1, "La variante est requise")
     .superRefine((val, ctx) => {
-      const type = ctx.parent?.fabricType as FabricType;
+      const data = ctx.input as { fabricType: FabricType };
+      const type = data.fabricType;
       if (type && !FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -248,4 +249,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-                             }
+      }
