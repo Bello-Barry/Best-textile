@@ -8,7 +8,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
-import ProductGallery from "@/components/ui/ProductGallery";
+import ProductGallery from "@/components/ProductGallery";
+import ProductDetails from "@/components/ProductDetails";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +20,7 @@ const schema = z.object({
   price: z.coerce.number().min(0.1, "Le prix doit être positif"),
   stock: z.coerce.number().min(0, "Le stock doit être positif"),
   fabricType: z.string().min(1, "Type de tissu requis"),
-  fabricSubtype: z.string().min(1, "Variante requise"),
+  fabricSubtype: z.string().optional(),
   unit: z.enum(["mètre", "rouleau"]),
   images: z.array(z.string().url()).min(1, "Au moins une image requise")
 });
@@ -33,7 +34,7 @@ interface Product {
   price: number;
   stock: number;
   fabricType: string;
-  fabricSubtype: string;
+  fabricSubtype?: string;
   unit: "mètre" | "rouleau";
   images: string[];
 }
@@ -58,9 +59,13 @@ export default function ProductDetailPage() {
 
       if (error) {
         toast.error("Erreur lors du chargement du produit");
+        console.error(error);
       } else if (data) {
         setProduct(data);
-        reset(data);
+        reset({
+          ...data,
+          fabricSubtype: data.fabricSubtype || ""
+        });
       }
     };
 
@@ -72,7 +77,10 @@ export default function ProductDetailPage() {
     try {
       const { error } = await supabase
         .from("products")
-        .update(data)
+        .update({
+          ...data,
+          fabricSubtype: data.fabricSubtype || null
+        })
         .eq("id", id);
 
       if (error) throw error;
@@ -80,6 +88,7 @@ export default function ProductDetailPage() {
       router.push("/admin/products");
     } catch (error) {
       toast.error("Erreur lors de la mise à jour");
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +107,7 @@ export default function ProductDetailPage() {
         <CardContent>
           <ProductGallery 
             images={product.images} 
-            alt={`Galerie produit - ${product.name}`}
+            alt={`Galerie - ${product.name}`}
           />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
@@ -157,7 +166,7 @@ export default function ProductDetailPage() {
                 <label className="block text-sm font-medium mb-2">Variante</label>
                 <Input
                   {...register("fabricSubtype")}
-                  defaultValue={product.fabricSubtype}
+                  defaultValue={product.fabricSubtype || ""}
                 />
               </div>
             </div>
@@ -170,4 +179,4 @@ export default function ProductDetailPage() {
       </Card>
     </div>
   );
-      }
+}
