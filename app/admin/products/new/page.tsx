@@ -1,3 +1,5 @@
+// app/admin/products/new/page.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -43,7 +45,7 @@ const schema = z.object({
   fabricSubtype: z.string()
   .min(1, "La variante est requise")
   .superRefine((val, ctx) => {
-    const type = ctx.parent.fabricType as FabricType;
+    const type = (ctx as any)?.parent?.fabricType as FabricType;
     if (!FABRIC_CONFIG[type]?.subtypes.includes(val)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -237,4 +239,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-  }
+      }
