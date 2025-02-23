@@ -30,8 +30,6 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
-  FabricSubtype,
-  FabricUnit,
   isFabricType,
   isFabricSubtype
 } from "@/types/fabric-config";
@@ -89,6 +87,8 @@ export default function NewProductPage() {
   const handleSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
+      console.log("Soumission des données:", values); // Log de débogage
+      
       const { error } = await supabase
         .from("products")
         .insert([{
@@ -107,8 +107,8 @@ export default function NewProductPage() {
       toast.success("Produit créé avec succès");
       router.push("/admin/products");
     } catch (error: any) {
-      console.error("Erreur détaillée:", error);
-      toast.error(`Échec de la création: ${error.message || "Erreur inconnue"}`);
+      console.error("Erreur complète:", error);
+      toast.error(`Erreur lors de la création : ${error.message || "Erreur inconnue"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -132,14 +132,116 @@ export default function NewProductPage() {
                 selectedType={selectedType}
                 onTypeChange={(type) => {
                   setSelectedType(type);
-                  form.setValue("fabricSubtype", ""); // Reset subtype on type change
+                  form.setValue("fabricSubtype", "");
                 }}
                 onSubtypeChange={(subtype) => form.setValue("fabricSubtype", subtype)}
                 selectedUnit={form.watch("unit")}
                 onUnitChange={(unit) => form.setValue("unit", unit)}
               />
 
-              {/* ... (le reste des champs du formulaire reste inchangé) ... */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Nom du produit</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          placeholder="Tissu en coton bio"
+                          className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">
+                        Prix ({form.watch("unit") === "rouleau" ? "par rouleau" : "au mètre"})
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...field}
+                          placeholder="24.99"
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700">Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        rows={4} 
+                        placeholder="Décrivez les caractéristiques du tissu..."
+                        className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+                <FormField
+                  control={form.control}
+                  name="stock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">
+                        Stock ({form.watch("unit") === "rouleau" ? "rouleaux" : "mètres"})
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          placeholder="50"
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="images"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Images</FormLabel>
+                      <FormControl>
+                        <ImageUploader
+                          onUpload={(urls) => field.onChange(urls)}
+                          bucket="products"
+                          maxFiles={5}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm" />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <Button 
                 type="submit" 
