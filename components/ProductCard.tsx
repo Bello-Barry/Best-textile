@@ -82,7 +82,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </CardTitle>
               <div className="flex gap-2 mt-1 flex-wrap">
                 <Badge variant="secondary">{product.fabricType}</Badge>
-                {product.subtype && <Badge variant="outline">{product.subtype}</Badge>}
+                {product.fabricSubtype && (
+                  <Badge variant="outline">{product.fabricSubtype}</Badge>
+                )}
               </div>
             </div>
           </div>
@@ -129,7 +131,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
                       size="icon"
                       className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90"
                       onClick={() => handleImageNavigation("prev")}
-                      aria-label="Image précédente"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -138,7 +139,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
                       size="icon"
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90"
                       onClick={() => handleImageNavigation("next")}
-                      aria-label="Image suivante"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
