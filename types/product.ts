@@ -6,8 +6,7 @@ export interface Product {
   stock: number;
   images: string[];
   fabricType: string;
+  fabricSubtype?: string;
   unit: "mètre" | "rouleau";
-  type?: string; // Ancienne propriété optionnelle
-  subtype?: string;
   created_at?: string;
 }
