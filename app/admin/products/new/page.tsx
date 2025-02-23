@@ -1,3 +1,4 @@
+// app/admin/products/new/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -30,6 +31,8 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
+  FabricSubtype,
+  FabricUnit,
   isFabricType,
   isFabricSubtype
 } from "@/types/fabric-config";
@@ -42,7 +45,13 @@ const schema = z.object({
   fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
   unit: z.enum(["mètre", "rouleau"]),
-  images: z.array(z.string().url()).min(1, "Au moins une image est requise")
+  images: z.array(
+    z.string().refine(url => 
+      url.startsWith('https://') && 
+      url.includes('.supabase.co/storage/v1/object/public/images'),
+      "URL d'image invalide"
+    )
+  ).min(1, "Au moins une image est requise")
 }).superRefine((data, ctx) => {
   if (isFabricType(data.fabricType)) {
     if (!isFabricSubtype(data.fabricType, data.fabricSubtype)) {
@@ -57,10 +66,18 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+interface ProductMetadata {
+  fabricType: FabricType;
+  fabricSubtype: FabricSubtype;
+  unit: FabricUnit;
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState<FabricType | null>(null);
+  const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
+  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -69,7 +86,7 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: "",
+      fabricType: "" as unknown as FabricType,
       fabricSubtype: "",
       unit: "mètre",
       images: []
@@ -79,36 +96,37 @@ export default function NewProductPage() {
   useEffect(() => {
     if (selectedType) {
       const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      setSelectedUnit(defaultUnit);
       form.setValue("unit", defaultUnit);
-      form.setValue("fabricType", selectedType);
     }
   }, [selectedType, form]);
 
   const handleSubmit = async (values: FormValues) => {
+    if (!selectedType) {
+      toast.error("Veuillez sélectionner un type de tissu");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      console.log("Soumission des données:", values); // Log de débogage
-      
-      const { error } = await supabase
-        .from("products")
-        .insert([{
-          ...values,
-          metadata: {
-            fabricType: values.fabricType,
-            fabricSubtype: values.fabricSubtype,
-            unit: values.unit
-          }
-        }]);
+      const metadata: ProductMetadata = {
+        fabricType: selectedType,
+        fabricSubtype: selectedSubtype as FabricSubtype,
+        unit: selectedUnit
+      };
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      const { error } = await supabase.from("products").insert([{
+        ...values,
+        metadata
+      }]);
+
+      if (error) throw error;
 
       toast.success("Produit créé avec succès");
       router.push("/admin/products");
-    } catch (error: any) {
-      console.error("Erreur complète:", error);
-      toast.error(`Erreur lors de la création : ${error.message || "Erreur inconnue"}`);
+    } catch (error) {
+      toast.error("Erreur lors de la création du produit");
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -130,13 +148,11 @@ export default function NewProductPage() {
             >
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={(type) => {
-                  setSelectedType(type);
-                  form.setValue("fabricSubtype", "");
-                }}
-                onSubtypeChange={(subtype) => form.setValue("fabricSubtype", subtype)}
-                selectedUnit={form.watch("unit")}
-                onUnitChange={(unit) => form.setValue("unit", unit)}
+                onTypeChange={setSelectedType}
+                selectedSubtype={selectedSubtype}
+                onSubtypeChange={setSelectedSubtype}
+                selectedUnit={selectedUnit}
+                onUnitChange={setSelectedUnit}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -149,7 +165,6 @@ export default function NewProductPage() {
                       <FormControl>
                         <Input 
                           {...field} 
-                          placeholder="Tissu en coton bio"
                           className="focus-visible:ring-2 focus-visible:ring-blue-500"
                         />
                       </FormControl>
@@ -157,21 +172,19 @@ export default function NewProductPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700">
-                        Prix ({form.watch("unit") === "rouleau" ? "par rouleau" : "au mètre"})
+                        Prix ({selectedUnit === "rouleau" ? "par rouleau" : "au mètre"})
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="0.01"
                           {...field}
-                          placeholder="24.99"
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseFloat(e.target.value))}
                         />
@@ -192,7 +205,6 @@ export default function NewProductPage() {
                       <Textarea 
                         {...field} 
                         rows={4} 
-                        placeholder="Décrivez les caractéristiques du tissu..."
                         className="focus-visible:ring-2 focus-visible:ring-blue-500"
                       />
                     </FormControl>
@@ -208,13 +220,12 @@ export default function NewProductPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700">
-                        Stock ({form.watch("unit") === "rouleau" ? "rouleaux" : "mètres"})
+                        Stock ({selectedUnit === "rouleau" ? "rouleaux" : "mètres"})
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           {...field}
-                          placeholder="50"
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
                         />
@@ -223,7 +234,6 @@ export default function NewProductPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="images"
@@ -232,8 +242,8 @@ export default function NewProductPage() {
                       <FormLabel className="text-gray-700">Images</FormLabel>
                       <FormControl>
                         <ImageUploader
-                          onUpload={(urls) => field.onChange(urls)}
-                          bucket="products"
+                          onUpload={(urls: string[]) => field.onChange(urls)}
+                          bucket="images"
                           maxFiles={5}
                         />
                       </FormControl>
@@ -263,4 +273,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-}
+    }
