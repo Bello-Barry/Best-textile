@@ -43,10 +43,10 @@ const schema = z.object({
   fabricType: z.string().min(1, "Le type de tissu est requis"),
   fabricSubtype: z.string()
     .min(1, "La variante est requise")
-    .superRefine((val, ctx) => {
-      const data = ctx.input as { fabricType: FabricType };
-      const type = data.fabricType;
-      if (type && !FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype)) {
+    .refine((val, data) => {
+      const type = data.fabricType as FabricType;
+      return !type || FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype);
+    }, "Variante invalide pour ce type de tissu")
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Variante invalide pour ce type de tissu"
@@ -249,4 +249,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-      }
+  }
