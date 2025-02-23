@@ -29,9 +29,11 @@ import ImageUploader from "@/components/ImageUploader";
 import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
-  type FabricType,
-  type FabricSubtype,
-  type FabricUnit
+  FabricType,
+  FabricSubtype,
+  FabricUnit,
+  isFabricType,
+  isFabricSubtype
 } from "@/types/fabric-config";
 
 const schema = z.object({
@@ -39,19 +41,13 @@ const schema = z.object({
   description: z.string().min(1, "La description est requise"),
   price: z.coerce.number().min(0.1, "Le prix doit être positif"),
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
-  fabricType: z.string().refine((val): val is FabricType => {
-    return Object.keys(FABRIC_CONFIG).includes(val);
-  }, "Type de tissu invalide"),
+  fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
   unit: z.enum(["mètre", "rouleau"]),
   images: z.array(z.string().url()).min(1, "Au moins une image est requise")
 }).superRefine((data, ctx) => {
-  const type = data.fabricType as FabricType;
-  const subtype = data.fabricSubtype;
-
-  if (type && FABRIC_CONFIG[type]?.subtypes) {
-    const validSubtypes = FABRIC_CONFIG[type].subtypes as FabricSubtype[];
-    if (!validSubtypes.includes(subtype as FabricSubtype)) {
+  if (isFabricType(data.fabricType) {
+    if (!isFabricSubtype(data.fabricType, data.fabricSubtype)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Combinaison type/variante invalide",
@@ -83,7 +79,7 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: "",
+      fabricType: undefined as unknown as FabricType,
       fabricSubtype: "",
       unit: "mètre",
       images: []
@@ -99,10 +95,15 @@ export default function NewProductPage() {
   }, [selectedType, form]);
 
   const handleSubmit = async (values: FormValues) => {
+    if (!selectedType) {
+      toast.error("Veuillez sélectionner un type de tissu");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const metadata: ProductMetadata = {
-        fabricType: selectedType!,
+        fabricType: selectedType,
         fabricSubtype: selectedSubtype as FabricSubtype,
         unit: selectedUnit
       };
@@ -135,21 +136,11 @@ export default function NewProductPage() {
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={(type: FabricType) => {
-                  setSelectedType(type);
-                  setSelectedSubtype("");
-                  form.setValue("fabricType", type);
-                }}
+                onTypeChange={(type) => setSelectedType(type)}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={(subtype: FabricSubtype) => {
-                  setSelectedSubtype(subtype);
-                  form.setValue("fabricSubtype", subtype);
-                }}
+                onSubtypeChange={(subtype) => setSelectedSubtype(subtype)}
                 selectedUnit={selectedUnit}
-                onUnitChange={(unit: FabricUnit) => {
-                  setSelectedUnit(unit);
-                  form.setValue("unit", unit);
-                }}
+                onUnitChange={(unit) => setSelectedUnit(unit)}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
