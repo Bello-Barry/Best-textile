@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,12 +26,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import ImageUploader from "@/components/ImageUploader";
-import SelectFabric, { 
+import SelectFabric from "@/components/SelectFabric";
+import { 
   FabricType, 
   FabricSubtype, 
-  FabricUnit 
-} from "@/components/SelectFabric";
-import { FABRIC_CONFIG } from "@/types/fabric-config";
+  FabricUnit,
+  FABRIC_CONFIG 
+} from "@/types/fabric-config";
 
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -39,7 +40,12 @@ const schema = z.object({
   price: z.coerce.number().min(0.1, "Le prix doit être positif"),
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().min(1, "Le type de tissu est requis"),
-  fabricSubtype: z.string().min(1, "La variante est requise"),
+  fabricSubtype: z.string().min(1, "La variante est requise")
+    .refine((val) => selectedType ? 
+      FABRIC_CONFIG[selectedType].subtypes.includes(val) : 
+      true,
+      "Variante invalide pour ce type de tissu"
+    ),
   unit: z.string().min(1, "L'unité est requise"),
   images: z.array(z.string()).min(1, "Au moins une image est requise")
 });
@@ -51,9 +57,15 @@ export default function NewProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState<FabricType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
-  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>(
-    selectedType ? FABRIC_CONFIG[selectedType].defaultUnit : "mètre"
-  );
+  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
+
+  useEffect(() => {
+    if (selectedType) {
+      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      setSelectedUnit(defaultUnit);
+      form.setValue("unit", defaultUnit);
+    }
+  }, [selectedType, form]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -102,15 +114,12 @@ export default function NewProductPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              {/* Sélecteurs de tissu */}
               <SelectFabric
                 selectedType={selectedType}
                 onTypeChange={(type) => {
                   setSelectedType(type);
                   setSelectedSubtype("");
-                  setSelectedUnit(FABRIC_CONFIG[type].defaultUnit);
                   form.setValue("fabricType", type);
-                  form.setValue("unit", FABRIC_CONFIG[type].defaultUnit);
                 }}
                 selectedSubtype={selectedSubtype}
                 onSubtypeChange={(subtype) => {
@@ -124,7 +133,6 @@ export default function NewProductPage() {
                 }}
               />
 
-              {/* Champs standards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -226,4 +234,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-      }
+}
