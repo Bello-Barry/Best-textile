@@ -218,7 +218,7 @@ export default function NewProductPage() {
                       <FormControl>
                         <ImageUploader
                           onUpload={(urls: string[]) => field.onChange(urls)}
-                          bucket="products"
+                          bucket="images"
                           maxFiles={5}
                         />
                       </FormControl>
