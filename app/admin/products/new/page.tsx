@@ -41,14 +41,16 @@ const schema = z.object({
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().min(1, "Le type de tissu est requis"),
   fabricSubtype: z.string()
-    .min(1, "La variante est requise")
-    .refine((val, ctx) => {
-      const type = ctx.parent.fabricType as FabricType;
-      return FABRIC_CONFIG[type]?.subtypes.includes(val) ?? false;
-    }, "Variante invalide pour ce type de tissu"),
-  unit: z.string().min(1, "L'unité est requise"),
-  images: z.array(z.string()).min(1, "Au moins une image est requise")
-});
+  .min(1, "La variante est requise")
+  .superRefine((val, ctx) => {
+    const type = ctx.parent.fabricType as FabricType;
+    if (!FABRIC_CONFIG[type]?.subtypes.includes(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Variante invalide pour ce type de tissu"
+      });
+    }
+  })
 
 type FormValues = z.infer<typeof schema>;
 
