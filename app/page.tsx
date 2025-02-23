@@ -4,22 +4,10 @@ import React, { useState, useEffect } from "react";
 import { Search, ShoppingCart, Star, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import ProductCard from "@/components/ProductCard";
+import { Product } from "@/types/product";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-// Interface mise à jour pour correspondre à celle de ProductCard
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  images: string[];
-  type: string;
-  subtype?: string;
-  created_at: string;
-}
 
 interface Category {
   name: string;
@@ -39,23 +27,34 @@ const LandingPage = () => {
     const fetchFeaturedProducts = async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(`
+          id,
+          name,
+          description,
+          price,
+          stock,
+          images,
+          fabricType,
+          unit,
+          created_at,
+          category: type,
+          subtype
+        `)
         .limit(4)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erreur lors du chargement des produits:", error);
-        return;
-      }
-
-      // Transformation des données pour s'assurer qu'elles correspondent à l'interface Product
       if (data) {
         const formattedProducts: Product[] = data.map((product) => ({
-          ...product,
-          id: Number(product.id),
-          images: product.images || [], // Conversion de image_url en tableau images
-          type: product.category || "Non catégorisé", // Utilisation de la catégorie comme type
-          stock: product.stock || 0,
+          id: product.id.toString(),
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          stock: product.stock,
+          images: product.images || [],
+          fabricType: product.fabricType || product.category || "Non catégorisé",
+          unit: product.unit || "mètre",
+          type: product.category,
+          subtype: product.subtype
         }));
         setFeaturedProducts(formattedProducts);
       }
@@ -77,19 +76,23 @@ const LandingPage = () => {
             Des tissus de qualité pour vos créations uniques
           </p>
           <div className="flex gap-4">
-            <Button
-              size="lg"
-              className="bg-white text-purple-600 hover:bg-gray-100"
-            >
-              Voir la Collection
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white/20"
-            >
-              En Savoir Plus
-            </Button>
+            <Link href="/products">
+              <Button
+                size="lg"
+                className="bg-white text-purple-600 hover:bg-gray-100"
+              >
+                Voir la Collection
+              </Button>
+            </Link>
+            <Link href="/about">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white/20"
+              >
+                En Savoir Plus
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
