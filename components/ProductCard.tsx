@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent } from "react";
 import { useCartStore } from "@/store/cartStore";
+import { Product } from "@/types/product";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,19 +13,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FabricType, FabricUnit } from "@/types/fabric-config";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  images: string[];
-  fabricType: FabricType;
-  fabricSubtype?: string;
-  unit: FabricUnit;
-}
 
 interface ProductCardProps {
   product: Product;
@@ -35,6 +23,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(product.unit === "rouleau" ? 1 : 0.1);
 
+  // Configuration dérivée
   const unitLabel = product.unit === "rouleau" ? "rouleau" : "mètre";
   const stepValue = product.unit === "rouleau" ? 1 : 0.1;
   const maxStock = product.stock;
@@ -46,12 +35,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   const handleImageNavigation = (direction: "next" | "prev") => {
-    setCurrentImageIndex(prev => {
-      const totalImages = product.images.length;
-      return direction === "next" 
-        ? (prev + 1) % totalImages 
-        : (prev - 1 + totalImages) % totalImages;
-    });
+    setCurrentImageIndex(prev => (direction === "next" 
+      ? (prev + 1) % product.images.length
+      : (prev - 1 + product.images.length) % product.images.length));
   };
 
   const handleAddToCart = () => {
@@ -93,9 +79,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </CardTitle>
               <div className="flex gap-2 mt-1 flex-wrap">
                 <Badge variant="secondary">{product.fabricType}</Badge>
-                {product.fabricSubtype && (
-                  <Badge variant="outline">{product.fabricSubtype}</Badge>
-                )}
+                {product.subtype && <Badge variant="outline">{product.subtype}</Badge>}
               </div>
             </div>
           </div>
