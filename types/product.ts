@@ -1,12 +1,13 @@
-// types/product.ts
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   stock: number;
-  fabricType: string;
-  fabricSubtype?: string;
-  unit: "mètre" | "rouleau";
   images: string[];
+  fabricType: string;
+  unit: "mètre" | "rouleau";
+  type?: string; // Ancienne propriété optionnelle
+  subtype?: string;
+  created_at?: string;
 }
