@@ -34,7 +34,7 @@ import {
   type FabricUnit
 } from "@/types/fabric-config";
 
-// Schéma de validation Zod avec typage fort
+// Schéma de validation corrigé
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -43,19 +43,21 @@ const schema = z.object({
   fabricType: z.string().refine((val): val is FabricType => {
     return Object.keys(FABRIC_CONFIG).includes(val);
   }, "Type de tissu invalide"),
-  fabricSubtype: z.string().superRefine((val, ctx) => {
-    const type = ctx.parent.fabricType as FabricType;
-    const validSubtypes = FABRIC_CONFIG[type]?.subtypes;
-    
-    if (!validSubtypes?.includes(val)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Variante invalide pour ce type de tissu"
-      });
-    }
-  }),
-  unit: z.enum(["mètre", "rouleau"] as const),
-  images: z.array(z.string()).min(1, "Au moins une image est requise")
+  fabricSubtype: z.string().min(1, "La variante est requise"),
+  unit: z.enum(["mètre", "rouleau"]),
+  images: z.array(z.string().url()).min(1, "Au moins une image est requise")
+}).superRefine((data, ctx) => {
+  // Validation croisée type/subtype
+  const type = data.fabricType as FabricType;
+  const subtype = data.fabricSubtype;
+  
+  if (!FABRIC_CONFIG[type]?.subtypes.includes(subtype)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Combinaison type/variante invalide",
+      path: ["fabricSubtype"]
+    });
+  }
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -250,4 +252,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-                                         }
+    }
