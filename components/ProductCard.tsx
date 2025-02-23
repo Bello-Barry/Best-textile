@@ -23,7 +23,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(product.unit === "rouleau" ? 1 : 0.1);
 
-  // Configuration dérivée
   const unitLabel = product.unit === "rouleau" ? "rouleau" : "mètre";
   const stepValue = product.unit === "rouleau" ? 1 : 0.1;
   const maxStock = product.stock;
@@ -47,9 +46,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
 
     addToCart({
-      ...product,
+      id: product.id,
+      name: product.name,
+      price: product.price,
       quantity,
-      unit: product.unit
+      images: product.images,
+      unit: product.unit,
+      fabricType: product.fabricType
     });
 
     toast.success(
@@ -126,6 +129,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                       size="icon"
                       className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90"
                       onClick={() => handleImageNavigation("prev")}
+                      aria-label="Image précédente"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -134,6 +138,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                       size="icon"
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90"
                       onClick={() => handleImageNavigation("next")}
+                      aria-label="Image suivante"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
