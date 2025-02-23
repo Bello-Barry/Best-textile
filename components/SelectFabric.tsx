@@ -7,8 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FABRIC_CONFIG, FabricType, FabricSubtype, FabricUnit } from "@/types/fabric-config";
-
+import { FABRIC_CONFIG } from "@/types/fabric-config";
+import { FabricType, FabricSubtype, FabricUnit } from "@/types/fabric-config";
 type SelectFabricProps = {
   selectedType: FabricType | null;
   onTypeChange: (type: FabricType) => void;
