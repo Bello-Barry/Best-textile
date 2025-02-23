@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
-import ProductGallery from "@/components/ProductGallery";
+import ProductGallery from "@/components/ui/ProductGallery";
 
 // Schéma de validation étendu avec les nouveaux champs
 const schema = z.object({
