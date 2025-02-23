@@ -34,7 +34,6 @@ import {
   type FabricUnit
 } from "@/types/fabric-config";
 
-// Schéma de validation corrigé
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -47,16 +46,18 @@ const schema = z.object({
   unit: z.enum(["mètre", "rouleau"]),
   images: z.array(z.string().url()).min(1, "Au moins une image est requise")
 }).superRefine((data, ctx) => {
-  // Validation croisée type/subtype
   const type = data.fabricType as FabricType;
   const subtype = data.fabricSubtype;
-  
-  if (!FABRIC_CONFIG[type]?.subtypes.includes(subtype)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Combinaison type/variante invalide",
-      path: ["fabricSubtype"]
-    });
+
+  if (type && FABRIC_CONFIG[type]?.subtypes) {
+    const validSubtypes = FABRIC_CONFIG[type].subtypes as FabricSubtype[];
+    if (!validSubtypes.includes(subtype as FabricSubtype)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Combinaison type/variante invalide",
+        path: ["fabricSubtype"]
+      });
+    }
   }
 });
 
