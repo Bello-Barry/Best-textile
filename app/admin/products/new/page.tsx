@@ -43,15 +43,16 @@ const schema = z.object({
   fabricType: z.string().min(1, "Le type de tissu est requis"),
   fabricSubtype: z.string()
     .min(1, "La variante est requise")
-    .refine((val, data) => {
-      const type = data.fabricType as FabricType;
-      return !type || FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype);
-    }, "Variante invalide pour ce type de tissu")
+    .refine((val, ctx) => {
+      const type = ctx.parent.fabricType as FabricType;
+      if (!FABRIC_CONFIG[type]?.subtypes.includes(val as FabricSubtype)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Variante invalide pour ce type de tissu"
         });
+        return false;
       }
+      return true;
     }),
   unit: z.enum(["mètre", "rouleau"] as const),
   images: z.array(z.string()).optional().default([])
@@ -249,4 +250,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-  }
+            }
