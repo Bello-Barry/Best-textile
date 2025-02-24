@@ -1,4 +1,3 @@
-// app/admin/products/new/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -37,6 +36,7 @@ import {
   isFabricSubtype
 } from "@/types/fabric-config";
 
+// Schéma de validation amélioré
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -86,20 +86,32 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: "" as unknown as FabricType,
+      fabricType: "",
       fabricSubtype: "",
       unit: "mètre",
       images: []
     }
   });
 
+  // Mise à jour automatique des valeurs du formulaire lors des changements
   useEffect(() => {
     if (selectedType) {
+      form.setValue("fabricType", selectedType);
       const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
       setSelectedUnit(defaultUnit);
       form.setValue("unit", defaultUnit);
     }
   }, [selectedType, form]);
+
+  useEffect(() => {
+    if (selectedSubtype) {
+      form.setValue("fabricSubtype", selectedSubtype);
+    }
+  }, [selectedSubtype, form]);
+
+  useEffect(() => {
+    form.setValue("unit", selectedUnit);
+  }, [selectedUnit, form]);
 
   const handleSubmit = async (values: FormValues) => {
     if (!selectedType) {
@@ -107,28 +119,71 @@ export default function NewProductPage() {
       return;
     }
 
+    if (!selectedSubtype) {
+      toast.error("Veuillez sélectionner une variante de tissu");
+      return;
+    }
+
     setIsSubmitting(true);
+    
     try {
+      // Validation supplémentaire des données
+      if (!values.images || values.images.length === 0) {
+        throw new Error("Au moins une image est requise");
+      }
+
       const metadata: ProductMetadata = {
         fabricType: selectedType,
         fabricSubtype: selectedSubtype as FabricSubtype,
         unit: selectedUnit
       };
 
-      const { error } = await supabase.from("products").insert([{
-        ...values,
+      const productData = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        stock: values.stock,
+        images: values.images,
         metadata
-      }]);
+      };
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("products")
+        .insert([productData])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("Aucune donnée retournée après l'insertion");
+      }
 
       toast.success("Produit créé avec succès");
       router.push("/admin/products");
+      
     } catch (error) {
-      toast.error("Erreur lors de la création du produit");
-      console.error(error);
+      if (error instanceof Error) {
+        toast.error(`Erreur: ${error.message}`);
+      } else {
+        toast.error("Une erreur inattendue s'est produite");
+      }
+      console.error("Erreur lors de la création du produit:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Validation des images avant soumission
+  const handleImageUpload = (urls: string[]) => {
+    if (urls.length > 0) {
+      form.setValue("images", urls);
+    } else {
+      form.setError("images", {
+        type: "manual",
+        message: "Au moins une image est requise"
+      });
     }
   };
 
@@ -148,7 +203,10 @@ export default function NewProductPage() {
             >
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={setSelectedType}
+                onTypeChange={(type) => {
+                  setSelectedType(type);
+                  setSelectedSubtype(""); // Réinitialiser le sous-type
+                }}
                 selectedSubtype={selectedSubtype}
                 onSubtypeChange={setSelectedSubtype}
                 selectedUnit={selectedUnit}
@@ -166,6 +224,7 @@ export default function NewProductPage() {
                         <Input 
                           {...field} 
                           className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                          placeholder="Nom du produit"
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -187,6 +246,7 @@ export default function NewProductPage() {
                           {...field}
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          placeholder="0.00"
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -206,6 +266,7 @@ export default function NewProductPage() {
                         {...field} 
                         rows={4} 
                         className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                        placeholder="Description du produit"
                       />
                     </FormControl>
                     <FormMessage className="text-red-500 text-sm" />
@@ -228,6 +289,7 @@ export default function NewProductPage() {
                           {...field}
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          placeholder="0"
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -242,7 +304,7 @@ export default function NewProductPage() {
                       <FormLabel className="text-gray-700">Images</FormLabel>
                       <FormControl>
                         <ImageUploader
-                          onUpload={(urls: string[]) => field.onChange(urls)}
+                          onUpload={handleImageUpload}
                           bucket="images"
                           maxFiles={5}
                         />
