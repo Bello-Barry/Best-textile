@@ -51,16 +51,6 @@ const schema = z.object({
       "URL d'image invalide"
     )
   ).min(1, "Au moins une image est requise")
-}).superRefine((data, ctx) => {
-  if (isFabricType(data.fabricType)) {
-    if (!isFabricSubtype(data.fabricType, data.fabricSubtype)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Combinaison type/variante invalide",
-        path: ["fabricSubtype"]
-      });
-    }
-  }
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -85,28 +75,54 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: "gabardine" as FabricType, // Définir une valeur par défaut valide
+      fabricType: "gabardine" as FabricType,
       fabricSubtype: "",
       unit: "mètre",
       images: []
     }
   });
 
+  // Synchronisation des valeurs du formulaire avec les états
   useEffect(() => {
     if (selectedType) {
+      form.setValue("fabricType", selectedType);
       const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
       setSelectedUnit(defaultUnit);
       form.setValue("unit", defaultUnit);
     }
   }, [selectedType, form]);
 
+  useEffect(() => {
+    if (selectedSubtype) {
+      form.setValue("fabricSubtype", selectedSubtype);
+    }
+  }, [selectedSubtype, form]);
+
+  useEffect(() => {
+    form.setValue("unit", selectedUnit);
+  }, [selectedUnit, form]);
+
   const handleSubmit = async (values: FormValues) => {
+    console.log("Formulaire soumis avec les valeurs:", values);
+
     if (!selectedType) {
       toast.error("Veuillez sélectionner un type de tissu");
       return;
     }
 
+    if (!selectedSubtype) {
+      toast.error("Veuillez sélectionner une variante de tissu");
+      return;
+    }
+
+    // Validation des champs obligatoires
+    if (!values.name || !values.description || !values.images.length) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
       const metadata: ProductMetadata = {
         fabricType: selectedType,
@@ -114,21 +130,56 @@ export default function NewProductPage() {
         unit: selectedUnit
       };
 
-      const { error } = await supabase.from("products").insert([{
-        ...values,
+      const productData = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        stock: values.stock,
+        images: values.images,
         metadata
-      }]);
+      };
 
-      if (error) throw error;
+      console.log("Données envoyées à Supabase:", productData);
+
+      const { data, error } = await supabase
+        .from("products")
+        .insert([productData])
+        .select();
+
+      console.log("Réponse Supabase:", { data, error });
+
+      if (error) {
+        console.error("Erreur Supabase:", error);
+        throw error;
+      }
 
       toast.success("Produit créé avec succès");
       router.push("/admin/products");
-    } catch (error) {
-      toast.error("Erreur lors de la création du produit");
-      console.error(error);
+      
+    } catch (error: any) {
+      console.error("Erreur complète:", error);
+      toast.error(error.message || "Erreur lors de la création du produit");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Gestionnaire pour le changement de type de tissu
+  const handleTypeChange = (type: FabricType | null) => {
+    console.log("Changement de type:", type);
+    setSelectedType(type);
+    setSelectedSubtype(""); // Réinitialiser le sous-type
+    if (type) {
+      form.setValue("fabricType", type);
+      form.setValue("fabricSubtype", "");
+    }
+  };
+
+  // Gestionnaire pour le changement de sous-type
+  const handleSubtypeChange = (subtype: string) => {
+    console.log("Changement de sous-type:", subtype);
+    setSelectedSubtype(subtype as FabricSubtype);
+    form.setValue("fabricSubtype", subtype);
   };
 
   return (
@@ -147,9 +198,9 @@ export default function NewProductPage() {
             >
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={setSelectedType}
+                onTypeChange={handleTypeChange}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={setSelectedSubtype}
+                onSubtypeChange={handleSubtypeChange}
                 selectedUnit={selectedUnit}
                 onUnitChange={setSelectedUnit}
               />
@@ -241,7 +292,10 @@ export default function NewProductPage() {
                       <FormLabel className="text-gray-700">Images</FormLabel>
                       <FormControl>
                         <ImageUploader
-                          onUpload={(urls: string[]) => field.onChange(urls)}
+                          onUpload={(urls: string[]) => {
+                            console.log("Images téléchargées:", urls);
+                            field.onChange(urls);
+                          }}
                           bucket="images"
                           maxFiles={5}
                         />
@@ -256,6 +310,9 @@ export default function NewProductPage() {
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700 transition-colors h-12 text-lg"
                 disabled={isSubmitting}
+                onClick={() => {
+                  console.log("État actuel du formulaire:", form.getValues());
+                }}
               >
                 {isSubmitting ? (
                   <>
@@ -272,4 +329,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-    }
+}
