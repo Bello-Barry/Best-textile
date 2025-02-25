@@ -36,6 +36,7 @@ import {
   isFabricSubtype
 } from "@/types/fabric-config";
 
+// Définition du schéma de validation
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -83,10 +84,12 @@ export default function NewProductPage() {
     }
   });
 
+  // Initialisation des états au chargement
   useEffect(() => {
     setSelectedType("gabardine" as FabricType);
   }, []);
 
+  // Synchronisation des valeurs du formulaire avec les états
   useEffect(() => {
     if (selectedType) {
       form.setValue("fabricType", selectedType);
@@ -116,6 +119,9 @@ export default function NewProductPage() {
 
   const handleSubmit = async (values: FormValues) => {
     try {
+      console.log("Formulaire soumis avec les valeurs:", values);
+
+      // Validation manuelle avant soumission
       if (!selectedType) {
         toast.error("Veuillez sélectionner un type de tissu");
         return;
@@ -126,14 +132,26 @@ export default function NewProductPage() {
         return;
       }
 
+      if (!values.name || !values.description) {
+        toast.error("Veuillez remplir tous les champs obligatoires");
+        return;
+      }
+
+      if (!values.images || values.images.length === 0) {
+        toast.error("Veuillez ajouter au moins une image");
+        return;
+      }
+
       setIsSubmitting(true);
 
+      // Création du metadata objet
       const metadata: ProductMetadata = {
         fabricType: selectedType,
         fabricSubtype: selectedSubtype as FabricSubtype,
         unit: selectedUnit
       };
 
+      // Préparation des données à envoyer
       const productData = {
         name: values.name,
         description: values.description,
@@ -143,41 +161,53 @@ export default function NewProductPage() {
         metadata
       };
 
+      console.log("Données envoyées à Supabase:", productData);
+
+      // Envoi des données à Supabase avec gestion d'erreur
       const { data, error } = await supabase
         .from("products")
         .insert([productData])
         .select();
 
-      if (error) throw new Error(error.message || "Erreur lors de la création du produit");
+      if (error) {
+        console.error("Erreur Supabase:", error);
+        throw new Error(error.message || "Erreur lors de la création du produit");
+      }
 
       toast.success("Produit créé avec succès");
       router.push("/admin/products");
       
     } catch (error: any) {
+      console.error("Erreur complète:", error);
       toast.error(error.message || "Erreur lors de la création du produit");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Gestionnaire pour le changement de type de tissu
   const handleTypeChange = (type: FabricType | null) => {
+    console.log("Changement de type:", type);
     setSelectedType(type);
-    setSelectedSubtype("");
+    setSelectedSubtype(""); // Réinitialiser le sous-type
     if (type) {
       form.setValue("fabricType", type);
       form.setValue("fabricSubtype", "");
     }
   };
 
-  // Correction ici : Ajout du deuxième argument pour isFabricSubtype
+  // Gestionnaire pour le changement de sous-type
   const handleSubtypeChange = (subtype: string) => {
-    if (subtype && selectedType && isFabricSubtype(subtype, selectedType)) {
+    console.log("Changement de sous-type:", subtype);
+    if (subtype && isFabricSubtype(subtype, selectedType)) {
       setSelectedSubtype(subtype as FabricSubtype);
       form.setValue("fabricSubtype", subtype);
     }
   };
 
+  // Gestionnaire pour les images téléchargées
   const handleImageUpload = (urls: string[]) => {
+    console.log("Images téléchargées:", urls);
     setUploadedImages(urls);
     form.setValue("images", urls);
   };
@@ -321,4 +351,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-}
+  }
