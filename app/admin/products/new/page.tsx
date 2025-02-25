@@ -36,6 +36,7 @@ import {
   isFabricSubtype
 } from "@/types/fabric-config";
 
+// Définition du schéma de validation
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -67,6 +68,7 @@ export default function NewProductPage() {
   const [selectedType, setSelectedType] = useState<FabricType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
   const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -81,6 +83,11 @@ export default function NewProductPage() {
       images: []
     }
   });
+
+  // Initialisation des états au chargement
+  useEffect(() => {
+    setSelectedType("gabardine" as FabricType);
+  }, []);
 
   // Synchronisation des valeurs du formulaire avec les états
   useEffect(() => {
@@ -99,58 +106,72 @@ export default function NewProductPage() {
   }, [selectedSubtype, form]);
 
   useEffect(() => {
-    form.setValue("unit", selectedUnit);
+    if (selectedUnit) {
+      form.setValue("unit", selectedUnit);
+    }
   }, [selectedUnit, form]);
 
+  useEffect(() => {
+    if (uploadedImages.length > 0) {
+      form.setValue("images", uploadedImages);
+    }
+  }, [uploadedImages, form]);
+
   const handleSubmit = async (values: FormValues) => {
-    console.log("Formulaire soumis avec les valeurs:", values);
-
-    if (!selectedType) {
-      toast.error("Veuillez sélectionner un type de tissu");
-      return;
-    }
-
-    if (!selectedSubtype) {
-      toast.error("Veuillez sélectionner une variante de tissu");
-      return;
-    }
-
-    // Validation des champs obligatoires
-    if (!values.name || !values.description || !values.images.length) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-
-    setIsSubmitting(true);
-
     try {
+      console.log("Formulaire soumis avec les valeurs:", values);
+
+      // Validation manuelle avant soumission
+      if (!selectedType) {
+        toast.error("Veuillez sélectionner un type de tissu");
+        return;
+      }
+
+      if (!selectedSubtype) {
+        toast.error("Veuillez sélectionner une variante de tissu");
+        return;
+      }
+
+      if (!values.name || !values.description) {
+        toast.error("Veuillez remplir tous les champs obligatoires");
+        return;
+      }
+
+      if (!values.images || values.images.length === 0) {
+        toast.error("Veuillez ajouter au moins une image");
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      // Création du metadata objet
       const metadata: ProductMetadata = {
         fabricType: selectedType,
         fabricSubtype: selectedSubtype as FabricSubtype,
         unit: selectedUnit
       };
 
+      // Préparation des données à envoyer
       const productData = {
         name: values.name,
         description: values.description,
-        price: values.price,
-        stock: values.stock,
+        price: Number(values.price),
+        stock: Number(values.stock),
         images: values.images,
         metadata
       };
 
       console.log("Données envoyées à Supabase:", productData);
 
+      // Envoi des données à Supabase avec gestion d'erreur
       const { data, error } = await supabase
         .from("products")
         .insert([productData])
         .select();
 
-      console.log("Réponse Supabase:", { data, error });
-
       if (error) {
         console.error("Erreur Supabase:", error);
-        throw error;
+        throw new Error(error.message || "Erreur lors de la création du produit");
       }
 
       toast.success("Produit créé avec succès");
@@ -178,8 +199,17 @@ export default function NewProductPage() {
   // Gestionnaire pour le changement de sous-type
   const handleSubtypeChange = (subtype: string) => {
     console.log("Changement de sous-type:", subtype);
-    setSelectedSubtype(subtype as FabricSubtype);
-    form.setValue("fabricSubtype", subtype);
+    if (subtype && isFabricSubtype(subtype)) {
+      setSelectedSubtype(subtype as FabricSubtype);
+      form.setValue("fabricSubtype", subtype);
+    }
+  };
+
+  // Gestionnaire pour les images téléchargées
+  const handleImageUpload = (urls: string[]) => {
+    console.log("Images téléchargées:", urls);
+    setUploadedImages(urls);
+    form.setValue("images", urls);
   };
 
   return (
@@ -236,7 +266,6 @@ export default function NewProductPage() {
                           step="0.01"
                           {...field}
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -277,7 +306,6 @@ export default function NewProductPage() {
                           type="number"
                           {...field}
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -292,10 +320,7 @@ export default function NewProductPage() {
                       <FormLabel className="text-gray-700">Images</FormLabel>
                       <FormControl>
                         <ImageUploader
-                          onUpload={(urls: string[]) => {
-                            console.log("Images téléchargées:", urls);
-                            field.onChange(urls);
-                          }}
+                          onUpload={handleImageUpload}
                           bucket="images"
                           maxFiles={5}
                         />
@@ -310,9 +335,6 @@ export default function NewProductPage() {
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700 transition-colors h-12 text-lg"
                 disabled={isSubmitting}
-                onClick={() => {
-                  console.log("État actuel du formulaire:", form.getValues());
-                }}
               >
                 {isSubmitting ? (
                   <>
