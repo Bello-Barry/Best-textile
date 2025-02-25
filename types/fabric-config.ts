@@ -36,9 +36,12 @@ export type FabricSubtype = typeof FABRIC_CONFIG[FabricType]["subtypes"][number]
 export type FabricUnit = typeof FABRIC_CONFIG[FabricType]["units"][number];
 
 export function isFabricType(type: string): type is FabricType {
-  return Object.keys(FABRIC_CONFIG).includes(type);
+  return type in FABRIC_CONFIG;
 }
 
-export function isFabricSubtype(type: FabricType, subtype: string): subtype is FabricSubtype {
-  return FABRIC_CONFIG[type].subtypes.includes(subtype as never);
+export function isFabricSubtype(
+  type: FabricType,
+  subtype: string
+): subtype is FabricSubtype {
+  return FABRIC_CONFIG[type].subtypes.includes(subtype as FabricSubtype);
 }
