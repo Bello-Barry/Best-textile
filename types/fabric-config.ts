@@ -43,5 +43,5 @@ export function isFabricSubtype(
   type: FabricType,
   subtype: string
 ): subtype is FabricSubtype {
-  return FABRIC_CONFIG[type].subtypes.includes(subtype as FabricSubtype);
+  return (FABRIC_CONFIG[type].subtypes as readonly string[]).includes(subtype);
 }
