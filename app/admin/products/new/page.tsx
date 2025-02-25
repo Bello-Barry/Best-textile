@@ -198,12 +198,11 @@ export default function NewProductPage() {
 
   // Gestionnaire pour le changement de sous-type
   const handleSubtypeChange = (subtype: string) => {
-    console.log("Changement de sous-type:", subtype);
-    if (subtype && isFabricSubtype(subtype, selectedType)) {
-      setSelectedSubtype(subtype as FabricSubtype);
-      form.setValue("fabricSubtype", subtype);
-    }
-  };
+  if (subtype && selectedType && isFabricSubtype(selectedType, subtype)) {
+    setSelectedSubtype(subtype);
+    form.setValue("fabricSubtype", subtype);
+  }
+};
 
   // Gestionnaire pour les images téléchargées
   const handleImageUpload = (urls: string[]) => {
