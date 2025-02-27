@@ -7,14 +7,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ProductCard from "@/components/ProductCard";
+import CategoryNav from "@/components/CategoryNav";
 
 const LandingPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [categories] = useState([
-    { name: "Soie", image: "/placeholder.jpg", count: 0 },
-    { name: "Bazin", image: "/placeholder.jpg", count: 0 },
-    { name: "Autre", image: "/placeholder.jpg", count: 0 },
-  ]);
+  const [selectedCategory, setSelectedCategory] = useState("Tous");
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
@@ -29,7 +26,6 @@ const LandingPage = () => {
           images,
           metadata
         `)
-        .limit(4)
         .order("created_at", { ascending: false });
 
       if (!error && data) {
@@ -47,6 +43,10 @@ const LandingPage = () => {
 
     fetchFeaturedProducts();
   }, []);
+
+  const filteredProducts = selectedCategory === "Tous"
+    ? featuredProducts
+    : featuredProducts.filter(p => p.metadata.fabricType === selectedCategory);
 
   return (
     <div className="min-h-screen">
@@ -75,12 +75,21 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* Produits vedettes */}
+      <CategoryNav 
+        products={featuredProducts}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+      />
+
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Produits Vedettes</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">
+            {selectedCategory === "Tous" 
+              ? "Tous nos produits" 
+              : `Produits en ${selectedCategory}`}
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
