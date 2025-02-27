@@ -21,10 +21,10 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCartStore();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(product.unit === "rouleau" ? 1 : 0.1);
+  const [quantity, setQuantity] = useState(product.metadata.unit === "rouleau" ? 1 : 0.1);
 
-  const unitLabel = product.unit === "rouleau" ? "rouleau" : "mètre";
-  const stepValue = product.unit === "rouleau" ? 1 : 0.1;
+  const unitLabel = product.metadata.unit;
+  const stepValue = unitLabel === "rouleau" ? 1 : 0.1;
   const maxStock = product.stock;
 
   const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -34,9 +34,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   const handleImageNavigation = (direction: "next" | "prev") => {
-    setCurrentImageIndex(prev => (direction === "next" 
+    setCurrentImageIndex(prev => direction === "next" 
       ? (prev + 1) % product.images.length
-      : (prev - 1 + product.images.length) % product.images.length));
+      : (prev - 1 + product.images.length) % product.images.length);
   };
 
   const handleAddToCart = () => {
@@ -51,8 +51,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
       price: product.price,
       quantity,
       images: product.images,
-      unit: product.unit,
-      fabricType: product.fabricType
+      unit: product.metadata.unit,
+      fabricType: product.metadata.fabricType,
+      metadata: product.metadata
     });
 
     toast.success(
@@ -81,9 +82,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 {product.name}
               </CardTitle>
               <div className="flex gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary">{product.fabricType}</Badge>
-                {product.fabricSubtype && (
-                  <Badge variant="outline">{product.fabricSubtype}</Badge>
+                <Badge variant="secondary">{product.metadata.fabricType}</Badge>
+                {product.metadata.fabricSubtype && (
+                  <Badge variant="outline">{product.metadata.fabricSubtype}</Badge>
                 )}
               </div>
             </div>
@@ -102,7 +103,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   className="relative w-full h-full"
                 >
                   <Image
-                    src={product.images[currentImageIndex]}
+                    src={product.images[currentImageIndex] || '/placeholder.jpg'}
                     alt={`${product.name} - Vue ${currentImageIndex + 1}`}
                     fill
                     className="object-cover cursor-pointer"
@@ -118,7 +119,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <DialogContent className="max-w-3xl p-0">
               <div className="relative w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
                 <Image
-                  src={product.images[currentImageIndex]}
+                  src={product.images[currentImageIndex] || '/placeholder.jpg'}
                   alt={`Vue agrandie - ${product.name}`}
                   fill
                   className="object-contain"
