@@ -5,8 +5,16 @@ export interface Product {
   price: number;
   stock: number;
   images: string[];
-  fabricType: string;
-  fabricSubtype?: string;
-  unit: "mètre" | "rouleau";
+  metadata: {
+    fabricType: string;
+    fabricSubtype: string;
+    unit: "mètre" | "rouleau";
+  };
   created_at?: string;
+}
+
+export interface Category {
+  name: string;
+  image: string;
+  count: number;
 }
