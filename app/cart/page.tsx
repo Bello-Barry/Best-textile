@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +11,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateQuantity, clearCart } =
-    useCartStore();
+  const { cartItems, removeFromCart, updateQuantity, clearCart } = useCartStore();
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const router = useRouter();
 
@@ -99,7 +98,7 @@ export default function CartPage() {
                     <div className="flex-1">
                       <h3 className="font-semibold">{item.name}</h3>
                       <p className="text-sm text-gray-500">
-                        {item.price.toFixed(2)} € / unité
+                        {item.price.toFixed(2)} € / {item.metadata?.unit}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
