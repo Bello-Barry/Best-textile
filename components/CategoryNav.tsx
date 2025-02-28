@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Shirt,
   Sofa,
-  Rollercoaster,
+  Cylinder,
   Box,
   ListFilter,
   ChevronRight
@@ -38,7 +38,7 @@ const CategoryNav = ({
     },
     {
       name: "Bazin",
-      icon: <Rollercoaster className="h-5 w-5 mr-2" />,
+      icon: <Cylinder className="h-5 w-5 mr-2" />,
       count: 0
     },
     {
@@ -97,3 +97,5 @@ const CategoryNav = ({
     </div>
   );
 };
+
+export default CategoryNav;
