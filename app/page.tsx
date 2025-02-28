@@ -51,29 +51,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen">
       {/* Section Hero */}
-      <div className="relative h-[600px] bg-gradient-to-r from-purple-600 to-blue-600">
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Découvrez Notre Collection de Tissus
-          </h1>
-          <p className="text-lg md:text-xl mb-8">
-            Des tissus de qualité pour vos créations uniques
-          </p>
-          <div className="flex gap-4">
-            <Link href="/products">
-              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100">
-                Voir la Collection
-              </Button>
-            </Link>
-            <Link href="/about">
-              <Button size="lg" variant="outline" className="border-white hover:bg-white/20">
-                En Savoir Plus
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
+
 
       <CategoryNav 
         products={featuredProducts}
