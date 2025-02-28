@@ -94,8 +94,120 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-4">
-          {/* ... (le reste du code reste inchangé) ... */}
-        </CardContent>
+  {/* Section Galerie d'images */}
+  <div className="relative aspect-square rounded-lg overflow-hidden group">
+    <AnimatePresence initial={false} mode="wait">
+      <motion.div
+        key={currentImageIndex}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="relative h-full w-full"
+      >
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="absolute right-2 top-2 z-10 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
+              <Maximize className="h-4 w-4" />
+            </button>
+          </DialogTrigger>
+          
+          <Image
+            src={product.images[currentImageIndex]}
+            alt={product.name}
+            fill
+            className="object-cover cursor-zoom-in"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+          
+          <DialogContent className="max-w-4xl p-0">
+            <Image
+              src={product.images[currentImageIndex]}
+              alt={product.name}
+              width={1200}
+              height={1200}
+              className="object-contain max-h-[80vh]"
+            />
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+    </AnimatePresence>
+
+    {/* Navigation entre les images */}
+    {product.images.length > 1 && (
+      <>
+        <button
+          onClick={() => handleImageNavigation('prev')}
+          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => handleImageNavigation('next')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </>
+    )}
+  </div>
+
+  {/* Prix et Stock */}
+  <div className="flex justify-between items-center">
+    <span className="text-2xl font-bold">
+      {new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(product.price)}
+    </span>
+    <span className="text-sm text-muted-foreground">
+      {maxStock} {unitLabel}
+      {maxStock > 1 ? 's' : ''} disponible
+      {maxStock > 1 ? 's' : ''}
+    </span>
+  </div>
+
+  {/* Contrôles de quantité */}
+  <div className="flex gap-2">
+    <div className="flex flex-1 items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setQuantity(prev => Math.max(prev - stepValue, stepValue))}
+        disabled={quantity <= stepValue}
+      >
+        -
+      </Button>
+      <Input
+        type="number"
+        value={quantity}
+        onChange={handleQuantityChange}
+        min={stepValue}
+        max={maxStock}
+        step={stepValue}
+        className="text-center [appearance:textfield]"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setQuantity(prev => Math.min(prev + stepValue, maxStock))}
+        disabled={quantity >= maxStock}
+      >
+        +
+      </Button>
+    </div>
+
+    {/* Bouton d'ajout au panier */}
+    <Button
+      onClick={handleAddToCart}
+      className="flex-1 gap-2"
+      disabled={quantity > maxStock}
+    >
+      <ShoppingCart className="h-4 w-4" />
+      Ajouter
+    </Button>
+  </div>
+</CardContent>
       </Card>
     </motion.div>
   );
