@@ -1,4 +1,3 @@
-// CartPage.tsx
 "use client";
 
 import { useState } from "react";
@@ -27,10 +26,29 @@ export default function CartPage() {
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity > 0) {
       updateQuantity(id, newQuantity);
+    } else {
+      toast.error("La quantité ne peut pas être inférieure à zéro");
     }
   };
 
-  // ... (autres fonctions inchangées)
+  const handleRemoveItem = (id: string) => {
+    removeFromCart(id);
+    toast.info("Produit retiré du panier", {
+      icon: <Trash2 className="text-red-500" />,
+    });
+  };
+
+  const handleClearCart = () => {
+    if (isConfirmingClear) {
+      clearCart();
+      toast.warning("Panier vidé", {
+        icon: <PackageCheck className="text-red-500" />,
+      });
+      setIsConfirmingClear(false);
+    } else {
+      setIsConfirmingClear(true);
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -163,4 +181,4 @@ export default function CartPage() {
       </Card>
     </div>
   );
-                               }
+                    }
