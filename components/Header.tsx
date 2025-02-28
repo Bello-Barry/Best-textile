@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import ModeToggle  from "@/components/ModeToggle;
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { ShoppingCart } from "lucide-react";
@@ -32,7 +33,8 @@ export default function Header() {
     <header className="bg-white shadow">
       <div className="container mx-auto p-4 flex justify-between items-center">
         <Link href="/" className="text-xl font-bold">
-          Bienvenue sur le site de Best-textil 
+          mbaka-textil 
+           <ModeToggle />
         </Link>
         <nav className="flex gap-4 items-center">
           {user ? (
@@ -64,7 +66,7 @@ export default function Header() {
               <Link href="/auth/logins">
                 <Button variant="outline">Connexion</Button>
               </Link>
-              <ModeToggle />
+             
             </>
           )}
         </nav>
