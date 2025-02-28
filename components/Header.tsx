@@ -64,6 +64,7 @@ export default function Header() {
               <Link href="/auth/logins">
                 <Button variant="outline">Connexion</Button>
               </Link>
+              <ModeToggle />
             </>
           )}
         </nav>
