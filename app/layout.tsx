@@ -4,6 +4,7 @@ import "./globals.css";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,12 +21,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+         <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
         <Header />
-        <main>
+        <main className="min-h-screen bg-background text-foreground" >
           {" "}
           <CartProvider>{children}</CartProvider>
         </main>
         <Footer />
+            </ThemeProvider>
       </body>
     </html>
   );
