@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ProductCard from "@/components/ProductCard";
 import CategoryNav from "@/components/CategoryNav";
-import { toast } from "react-toastify";
+import { toast } from "react-toastify"
 
 const LandingPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
