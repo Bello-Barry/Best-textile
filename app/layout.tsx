@@ -19,21 +19,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-         <ThemeProvider
+        <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-        <Header />
-        <main className="min-h-screen bg-background text-foreground" >
-          {" "}
-          <CartProvider>{children}</CartProvider>
-        </main>
-        <Footer />
-            </ThemeProvider>
+          <Header />
+          <main className="min-h-screen bg-background text-foreground">
+            {" "}
+            <CartProvider>{children}</CartProvider>
+          </main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

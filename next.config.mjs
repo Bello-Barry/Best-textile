@@ -1,26 +1,19 @@
 // next.config.mjs
-
 const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "*.supabase.co",
-        port: "",
-        pathname: "/**"
-      }
+        hostname: "*.supabase.co", // Ajout du wildcard pour tous les sous-domaines
+        pathname: "/storage/v1/object/public/images/**",
+      },
     ],
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 604800, // 1 semaine
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384]
   },
   experimental: {
-    esmExternals: true
+    esmExternals: true,
   },
   reactStrictMode: true,
-  // Optionnel : Activation de la compression Brotli
-  compress: true
+  compress: true,
 };
 
 export default nextConfig;
