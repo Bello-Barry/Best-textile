@@ -1,120 +1,152 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Product } from "@/types/product";
-import CategoryNav from "@/components/CategoryNav";
-import ProductCard from "@/components/ProductCard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FABRIC_CONFIG, isFabricType } from "@/types/fabric-config";
-import { supabase } from "@/lib/supabaseClient";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCw } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Shirt,
+  Sofa,
+  Cylinder,
+  Box,
+  ListFilter,
+  ChevronRight,
+  Factory,
+  Grid,
+  Zap,
+  Scissors,
+  Gift,
+  Feather,
+  Cloud,
+} from "lucide-react";
+import { Product } from "@/types/product";
+import {
+  FABRIC_CONFIG,
+  FabricType,
+  getAllFabricTypes,
+  isFabricType,
+} from "@/types/fabric-config";
 
-export default function TextileCatalogPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface CategoryNavProps {
+  products: Product[];
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
+}
 
-  // Fetch products from Supabase
+const iconMap: Record<FabricType, React.ReactNode> = {
+  gabardine: <Factory className="h-5 w-5 mr-2" />,
+  bazin: <Cylinder className="h-5 w-5 mr-2" />,
+  soie: <Shirt className="h-5 w-5 mr-2" />,
+  velours: <Grid className="h-5 w-5 mr-2" />,
+  satin: <Zap className="h-5 w-5 mr-2" />,
+  kente: <Scissors className="h-5 w-5 mr-2" />,
+  lin: <Feather className="h-5 w-5 mr-2" />,
+  mousseline: <Cloud className="h-5 w-5 mr-2" />,
+  pagne: <Gift className="h-5 w-5 mr-2" />,
+  moustiquaire: <Grid className="h-5 w-5 mr-2" />,
+  brocart: <Shirt className="h-5 w-5 mr-2" />,
+  bogolan: <Scissors className="h-5 w-5 mr-2" />,
+  dashiki: <Shirt className="h-5 w-5 mr-2" />,
+  adire: <Grid className="h-5 w-5 mr-2" />,
+  ankara: <Gift className="h-5 w-5 mr-2" />,
+  shweshwe: <Feather className="h-5 w-5 mr-2" />,
+  aso_oke: <Cloud className="h-5 w-5 mr-2" />,
+};
+
+const CategoryNav = ({
+  products,
+  selectedCategory,
+  setSelectedCategory,
+}: CategoryNavProps) => {
+  const fabricTypes = useMemo(() => getAllFabricTypes(), []);
+
+  const baseCategories = useMemo(
+    () => [
+      {
+        id: "all",
+        name: "Tous les tissus",
+        icon: <Box className="h-5 w-5 mr-2" />,
+        count: products.length,
+      },
+      ...fabricTypes.map((type) => ({
+        id: type,
+        name: FABRIC_CONFIG[type].name,
+        icon: iconMap[type] || <Box className="h-5 w-5 mr-2" />,
+        count: 0,
+      })),
+      {
+        id: "other",
+        name: "Autres textiles",
+        icon: <Sofa className="h-5 w-5 mr-2" />,
+        count: 0,
+      },
+    ],
+    [fabricTypes, products.length]
+  );
+
+  const [categories, setCategories] = useState(baseCategories);
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setProducts(data || []);
-      } catch (err) {
-        setError("Erreur de chargement des produits");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const updated = baseCategories.map((cat) => {
+      if (cat.id === "all") return { ...cat, count: products.length };
+      if (cat.id === "other") {
+        return {
+          ...cat,
+          count: products.filter((p) => !isFabricType(p.metadata.fabricType))
+            .length,
+        };
       }
-    };
+      return {
+        ...cat,
+        count: products.filter((p) => p.metadata.fabricType === cat.id).length,
+      };
+    });
 
-    fetchProducts();
-  }, []);
-
-  // Filter products based on selection
-  const filteredProducts = products.filter((product) => {
-    if (selectedCategory === "all") return true;
-    if (selectedCategory === "other")
-      return !isFabricType(product.metadata.fabricType);
-    return product.metadata.fabricType === selectedCategory;
-  });
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-6 text-center">
-        <div className="text-destructive mb-4">{error}</div>
-        <Button onClick={() => window.location.reload()}>
-          <RotateCw className="mr-2 h-4 w-4" />
-          Réessayer
-        </Button>
-      </div>
-    );
-  }
+    setCategories(updated);
+  }, [products, baseCategories]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <CategoryNav
-        products={products}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-      />
-
-      <div className="container mx-auto px-4 py-8">
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="h-[420px] rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <>
-            <div className="mb-6 text-muted-foreground">
-              {filteredProducts.length} résultats pour "
-              {selectedCategory === "all"
-                ? "Toutes les catégories"
-                : FABRIC_CONFIG[selectedCategory as keyof typeof FABRIC_CONFIG]
-                    ?.name || selectedCategory}
-              "
+    <div className="bg-background border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between py-4">
+          <ScrollArea className="whitespace-nowrap pb-2">
+            <div className="flex space-x-4">
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={
+                    selectedCategory === category.id ? "secondary" : "ghost"
+                  }
+                  className={`rounded-full px-6 py-2 flex items-center transition-colors ${
+                    selectedCategory === category.id
+                      ? "bg-primary/10 text-primary hover:bg-primary/20"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  {category.icon}
+                  {category.name}
+                  <span className="ml-2 bg-primary/10 px-2 py-1 rounded-full text-sm text-primary">
+                    {category.count}
+                  </span>
+                </Button>
+              ))}
             </div>
+          </ScrollArea>
 
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Aucun produit trouvé dans cette catégorie
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => {
-                  const fabricType = product.metadata.fabricType;
-                  const fabricConfig = isFabricType(fabricType)
-                    ? FABRIC_CONFIG[fabricType]
-                    : null;
-
-                  return (
-                    <ProductCard
-                      key={product.id}
-                      product={{
-                        ...product,
-                        metadata: {
-                          ...product.metadata,
-                          unit: fabricConfig?.defaultUnit || "mètre",
-                          fabricType: fabricConfig?.name || fabricType,
-                        },
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
+          <div className="flex items-center space-x-4 pl-6 border-l">
+            <Button
+              variant="ghost"
+              className="flex items-center dark:hover:bg-gray-800"
+            >
+              <ListFilter className="h-5 w-5 mr-2" />
+              Filtres avancés
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default CategoryNav;
