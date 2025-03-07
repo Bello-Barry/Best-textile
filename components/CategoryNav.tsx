@@ -18,7 +18,6 @@ import {
   Feather,
   Cloud,
 } from "lucide-react";
-import { Product } from "@/types/product";
 import {
   FABRIC_CONFIG,
   FabricType,
@@ -26,12 +25,26 @@ import {
   isFabricType,
 } from "@/types/fabric-config";
 
+// Interface pour les propriétés du composant
 interface CategoryNavProps {
   products: Product[];
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
 }
 
+// Interface pour le type Product
+interface Product {
+  id: string;
+  name: string;
+  metadata: {
+    fabricType: string;
+    fabricSubtype?: string;
+    unit?: string;
+  };
+  // Ajoutez d'autres propriétés si nécessaire
+}
+
+// Mapping des icônes
 const iconMap: Record<FabricType, React.ReactNode> = {
   gabardine: <Factory className="h-5 w-5 mr-2" />,
   bazin: <Cylinder className="h-5 w-5 mr-2" />,
