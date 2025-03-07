@@ -46,7 +46,7 @@ export default function Header() {
             href="/"
             className="text-xl font-bold text-foreground hover:opacity-80 transition-opacity"
           >
-            mbaka-textil
+            mbaka-textile
           </Link>
         </div>
 
@@ -90,7 +90,7 @@ export default function Header() {
                 </Link>
               </>
             ) : (
-              <Link href="/auth/login">
+              <Link href="/auth/logins">
                 <Button variant="outline" className="text-foreground">
                   Connexion
                 </Button>
