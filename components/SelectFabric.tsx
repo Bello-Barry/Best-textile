@@ -10,7 +10,6 @@ import {
 import { 
   FABRIC_CONFIG, 
   FabricType, 
-  FabricSubtype, 
   FabricUnit,
   isFabricType,
   isFabricSubtype
@@ -19,8 +18,8 @@ import {
 type SelectFabricProps = {
   selectedType: FabricType | null;
   onTypeChange: (type: FabricType) => void;
-  selectedSubtype: FabricSubtype | "";
-  onSubtypeChange: (subtype: FabricSubtype) => void;
+  selectedSubtype: string;
+  onSubtypeChange: (subtype: string) => void;
   selectedUnit: FabricUnit;
   onUnitChange: (unit: FabricUnit) => void;
 };
