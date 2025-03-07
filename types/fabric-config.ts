@@ -10,6 +10,7 @@ export type FabricUnit =
   | "set" 
   | "yard";
 
+export type FabricSubtype = string; 
 export type FabricType = keyof typeof FABRIC_CONFIG;
 
 export interface FabricConfigItem {
