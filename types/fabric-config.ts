@@ -7,7 +7,7 @@ export const FABRIC_CONFIG = {
   },
   bazin: {
     name: "Bazin",
-    subtypes: ["Riche", "Getzner", "Super", "Doré", "Impérial"],
+    subtypes: ["Riche", "Getzner", "Superfanga", "Doré", "Impérial"],
     units: ["mètre"],
     defaultUnit: "mètre"
   },
@@ -28,6 +28,78 @@ export const FABRIC_CONFIG = {
     subtypes: ["De Paris", "Duchesse", "Charme", "Coton"],
     units: ["mètre"],
     defaultUnit: "mètre"
+  },
+  kente: {
+    name: "Kente",
+    subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman", "Traditionnel", "Babadua"],
+    units: ["pièce", "mètre"],
+    defaultUnit: "pièce"
+  },
+  lin: {
+    name: "Lin",
+    subtypes: ["Naturel", "Lavé", "Mélangé", "Brodé", "Fin"],
+    units: ["mètre"],
+    defaultUnit: "mètre"
+  },
+  mousseline: {
+    name: "Mousseline",
+    subtypes: ["De soie", "De coton", "Brodée", "Imprimée", "Légère"],
+    units: ["mètre"],
+    defaultUnit: "mètre"
+  },
+  pagne: {
+    name: "Pagne",
+    subtypes: ["Wax", "Super Wax", "Fancy", "Java", "Woodin", "Vlisco"],
+    units: ["complet", "yards", "mètre"],
+    defaultUnit: "complet"
+  },
+  moustiquaire: {
+    name: "Moustiquaire",
+    subtypes: ["Simple", "Brodée", "Renforcée", "Colorée"],
+    units: ["pièce", "mètre"],
+    defaultUnit: "pièce"
+  },
+  brocart: {
+    name: "Brocart",
+    subtypes: ["Damassé", "Jacquard", "Métallique", "Relief", "Traditionnel"],
+    units: ["mètre"],
+    defaultUnit: "mètre"
+  },
+  bogolan: {
+    name: "Bogolan",
+    subtypes: ["Traditionnel", "Moderne", "Bamanan", "Ségovien", "Minianka"],
+    units: ["bande", "mètre"],
+    defaultUnit: "bande"
+  },
+  dashiki: {
+    name: "Dashiki",
+    subtypes: ["Classique", "Brodé", "Angelina", "Festif", "Royal"],
+    units: ["pièce"],
+    defaultUnit: "pièce"
+  },
+  adire: {
+    name: "Adire",
+    subtypes: ["Eleko", "Alabere", "Oniko", "Batik", "Moderne"],
+    units: ["yard", "mètre"],
+    defaultUnit: "yard"
+  },
+  ankara: {
+    name: "Ankara",
+    subtypes: ["Hollandais", "Hitarget", "ABC", "Premium", "Phoenix"],
+    units: ["yards", "complet", "mètre"],
+    defaultUnit: "complet"
+  },
+  shweshwe: {
+    name: "Shweshwe",
+    subtypes: ["Three Cats", "Da Gama", "Spruce", "Indigo", "Toto"],
+    units: ["mètre"],
+    defaultUnit: "mètre"
+  },
+  aso_oke: {
+    name: "Aso-oke",
+    subtypes: ["Sanyan", "Alaari", "Etu", "Petuje", "Olowu"],
+    units: ["set", "mètre"],
+    defaultUnit: "set"
   }
 } as const;
 
@@ -44,4 +116,20 @@ export function isFabricSubtype(
   subtype: string
 ): subtype is FabricSubtype {
   return (FABRIC_CONFIG[type].subtypes as readonly string[]).includes(subtype);
+}
+
+export function getFabricUnits(type: FabricType): readonly string[] {
+  return FABRIC_CONFIG[type].units;
+}
+
+export function getDefaultUnit(type: FabricType): string {
+  return FABRIC_CONFIG[type].defaultUnit;
+}
+
+export function getAllFabricTypes(): FabricType[] {
+  return Object.keys(FABRIC_CONFIG) as FabricType[];
+}
+
+export function getFabricSubtypes(type: FabricType): readonly string[] {
+  return FABRIC_CONFIG[type].subtypes;
 }
