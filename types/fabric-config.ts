@@ -140,3 +140,6 @@ export function getFabricUnits(type: FabricType): FabricUnit[] {
 export function getDefaultUnit(type: FabricType): FabricUnit {
   return FABRIC_CONFIG[type].defaultUnit;
 }
+export function getAllFabricTypes(): FabricType[] {
+  return Object.keys(FABRIC_CONFIG) as FabricType[];
+}
