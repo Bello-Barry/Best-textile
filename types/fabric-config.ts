@@ -32,8 +32,8 @@ export const FABRIC_CONFIG = {
   kente: {
     name: "Kente",
     subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman", "Traditionnel", "Babadua"],
-    units: ["pièce", "mètre"],
-    defaultUnit: "pièce"
+    units: ["mètre"],
+    defaultUnit: "mètre"
   },
   lin: {
     name: "Lin",
@@ -50,14 +50,14 @@ export const FABRIC_CONFIG = {
   pagne: {
     name: "Pagne",
     subtypes: ["Wax", "Super Wax", "Fancy", "Java", "Woodin", "Vlisco"],
-    units: ["complet", "yards", "mètre"],
-    defaultUnit: "complet"
+    units: [ "mètre"],
+    defaultUnit: "mètre"
   },
   moustiquaire: {
     name: "Moustiquaire",
     subtypes: ["Simple", "Brodée", "Renforcée", "Colorée"],
-    units: ["pièce", "mètre"],
-    defaultUnit: "pièce"
+    units: ["mètre"],
+    defaultUnit: "mètre"
   },
   brocart: {
     name: "Brocart",
@@ -68,26 +68,26 @@ export const FABRIC_CONFIG = {
   bogolan: {
     name: "Bogolan",
     subtypes: ["Traditionnel", "Moderne", "Bamanan", "Ségovien", "Minianka"],
-    units: ["bande", "mètre"],
-    defaultUnit: "bande"
+    units: [ "mètre"],
+    defaultUnit: "mètre"
   },
   dashiki: {
     name: "Dashiki",
     subtypes: ["Classique", "Brodé", "Angelina", "Festif", "Royal"],
-    units: ["pièce"],
-    defaultUnit: "pièce"
+    units: ["mètre"],
+    defaultUnit: "mètre"
   },
   adire: {
     name: "Adire",
     subtypes: ["Eleko", "Alabere", "Oniko", "Batik", "Moderne"],
-    units: ["yard", "mètre"],
-    defaultUnit: "yard"
+    units: [ "mètre"],
+    defaultUnit: "mètre"
   },
   ankara: {
     name: "Ankara",
     subtypes: ["Hollandais", "Hitarget", "ABC", "Premium", "Phoenix"],
-    units: ["yards", "complet", "mètre"],
-    defaultUnit: "complet"
+    units: ["mètre"],
+    defaultUnit: "mètre"
   },
   shweshwe: {
     name: "Shweshwe",
@@ -98,8 +98,8 @@ export const FABRIC_CONFIG = {
   aso_oke: {
     name: "Aso-oke",
     subtypes: ["Sanyan", "Alaari", "Etu", "Petuje", "Olowu"],
-    units: ["set", "mètre"],
-    defaultUnit: "set"
+    units: ["mètre"],
+    defaultUnit: "mètre"
   }
 } as const;
 
