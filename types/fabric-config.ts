@@ -1,4 +1,17 @@
-export const FABRIC_CONFIG = {
+// Définition explicite du type d'objet de configuration pour aider TypeScript
+export interface FabricConfigItem {
+  name: string;
+  subtypes: string[];
+  units: string[];
+  defaultUnit: string;
+}
+
+export interface FabricConfigType {
+  [key: string]: FabricConfigItem;
+}
+
+// La configuration avec l'interface explicite pour permettre l'indexation par string
+export const FABRIC_CONFIG: FabricConfigType = {
   gabardine: {
     name: "Gabardine",
     subtypes: Array.from({ length: 12 }, (_, i) => `Type ${i + 1}`),
@@ -7,13 +20,13 @@ export const FABRIC_CONFIG = {
   },
   bazin: {
     name: "Bazin",
-    subtypes: ["Riche", "Getzner", "SuperFanga", "Doré", "Impérial"],
+    subtypes: ["Riche", "Getzner", "Super", "Doré", "Impérial"],
     units: ["mètre"],
     defaultUnit: "mètre"
   },
   soie: {
     name: "Soie",
-    subtypes: ["Uni", "plissée", "fleurie ", "Bazin ", "brodé"],
+    subtypes: ["Naturelle", "Charmeuse", "Dupion", "Satinée", "Organza"],
     units: ["mètre"],
     defaultUnit: "mètre"
   },
@@ -25,13 +38,13 @@ export const FABRIC_CONFIG = {
   },
   satin: {
     name: "Satin",
-    subtypes: ["De Paris", "Duchesse", "riche ", "Coton"],
+    subtypes: ["De Paris", "Duchesse", "Charme", "Coton"],
     units: ["mètre"],
     defaultUnit: "mètre"
   },
   kente: {
     name: "Kente",
-    subtypes: ["Adweneasa", "Sika Futuro", "pagne", "traditionnel", "Babadua"],
+    subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman", "Asasia", "Babadua"],
     units: ["pièce", "mètre"],
     defaultUnit: "pièce"
   },
@@ -49,7 +62,7 @@ export const FABRIC_CONFIG = {
   },
   pagne: {
     name: "Pagne",
-    subtypes: ["Wax", "Super Wax", "kinte", "Java", "Woodin", "Vlisco"],
+    subtypes: ["Wax", "Super Wax", "Fancy", "Java", "Woodin", "Vlisco"],
     units: ["complet", "yards", "mètre"],
     defaultUnit: "complet"
   },
@@ -103,12 +116,12 @@ export const FABRIC_CONFIG = {
   }
 };
 
-// Définitions de types plus sûres qui fonctionnent mieux en runtime
+// Types exportés
 export type FabricType = string;
 export type FabricSubtype = string;
 export type FabricUnit = string;
 
-// Fonctions de validation plus robustes avec vérifications supplémentaires
+// Fonctions de validation optimisées pour TypeScript
 export function isFabricType(type: string): boolean {
   if (!type || typeof type !== 'string') return false;
   return Object.prototype.hasOwnProperty.call(FABRIC_CONFIG, type);
@@ -119,7 +132,6 @@ export function isFabricSubtype(type: string, subtype: string): boolean {
   if (!isFabricType(type)) return false;
   
   try {
-    // Utilisation de la vérification with try/catch pour éviter les erreurs
     return FABRIC_CONFIG[type]?.subtypes?.includes(subtype) || false;
   } catch (error) {
     console.error("Error checking fabric subtype:", error);
@@ -172,10 +184,9 @@ export function getFabricSubtypes(type: string): string[] {
   }
 }
 
-// Fonction d'aide pour obtenir le nom complet d'un tissu
 export function getFabricName(type: string): string {
   if (!type || typeof type !== 'string') return "";
-  if (!isFabricType(type)) return type; // Retourne le type tel quel si non trouvé
+  if (!isFabricType(type)) return type;
   
   try {
     return FABRIC_CONFIG[type].name || type;
@@ -185,7 +196,6 @@ export function getFabricName(type: string): string {
   }
 }
 
-// Fonction pour vérifier si une unité est valide pour un type de tissu
 export function isValidUnit(type: string, unit: string): boolean {
   if (!type || !unit || typeof type !== 'string' || typeof unit !== 'string') return false;
   if (!isFabricType(type)) return false;
@@ -196,4 +206,16 @@ export function isValidUnit(type: string, unit: string): boolean {
     console.error("Error checking valid unit:", error);
     return false;
   }
+}
+
+// Fonction de sécurité pour accéder aux propriétés de configuration
+export function getFabricConfig(type: string): FabricConfigItem | null {
+  if (!type || !isFabricType(type)) return null;
+  return FABRIC_CONFIG[type] || null;
+}
+
+// Fonction pour obtenir l'unité par défaut de manière sécurisée
+export function getSafeDefaultUnit(type: string): string {
+  const config = getFabricConfig(type);
+  return config?.defaultUnit || "mètre";
 }
