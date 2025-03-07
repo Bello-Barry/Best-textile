@@ -30,9 +30,7 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
-  FabricUnit,
-  isFabricType,
-  isFabricSubtype
+  isFabricType
 } from "@/types/fabric-config";
 
 const schema = z.object({
@@ -42,16 +40,7 @@ const schema = z.object({
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
-  unit: z.enum([
-    "mètre", 
-    "rouleau", 
-    "pièce", 
-    "complet", 
-    "yards", 
-    "bande", 
-    "set", 
-    "yard"
-  ]),
+  unit: z.enum(["mètre", "rouleau", "pièce", "complet", "yards", "bande", "set", "yard"]),
   images: z.array(
     z.string().refine(url => 
       url.startsWith('https://') && 
@@ -68,7 +57,7 @@ export default function NewProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState<FabricType>("gabardine");
   const [selectedSubtype, setSelectedSubtype] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
+  const [selectedUnit, setSelectedUnit] = useState<string>("mètre");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
@@ -99,43 +88,59 @@ export default function NewProductPage() {
     try {
       setIsSubmitting(true);
       
-      const metadata = {
-        fabricType: selectedType,
-        fabricSubtype: selectedSubtype,
-        unit: selectedUnit
+      // Validation étendue
+      if (!values.images?.length) {
+        throw new Error("Ajoutez au moins une image");
+      }
+
+      if (!selectedType || !isFabricType(selectedType)) {
+        throw new Error("Sélectionnez un type de tissu valide");
+      }
+
+      const payload = {
+        name: values.name,
+        description: values.description,
+        price: Number(values.price),
+        stock: Number(values.stock),
+        images: values.images,
+        metadata: {
+          fabricType: selectedType,
+          fabricSubtype: selectedSubtype,
+          unit: selectedUnit
+        },
+        created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      console.log("Données envoyées:", payload);
+
+      const { data, error } = await supabase
         .from("products")
-        .insert([{ ...values, metadata }]);
+        .insert([payload])
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase détaillée:", {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        throw error;
+      }
 
-      toast.success("Produit créé avec succès");
+      if (!data) {
+        throw new Error("Aucune donnée retournée par l'API");
+      }
+
+      toast.success("Produit créé avec succès !");
       router.push("/admin/products");
+
     } catch (error: any) {
-      console.error("Erreur:", error);
-      toast.error(error.message || "Erreur lors de la création");
+      console.error("Erreur complète:", error);
+      const errorMessage = error.message || error.details?.message || "Erreur inconnue";
+      toast.error(`Échec de la création : ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleTypeChange = (type: FabricType) => {
-    setSelectedType(type);
-    form.setValue("fabricType", type);
-  };
-
-  const handleSubtypeChange = (subtype: string) => {
-    if (subtype && selectedType && isFabricSubtype(selectedType, subtype)) {
-      setSelectedSubtype(subtype);
-      form.setValue("fabricSubtype", subtype);
-    }
-  };
-
-  const handleUnitChange = (unit: FabricUnit) => {
-    setSelectedUnit(unit);
-    form.setValue("unit", unit);
   };
 
   const handleImageUpload = (urls: string[]) => {
@@ -159,11 +164,11 @@ export default function NewProductPage() {
             >
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={handleTypeChange}
+                onTypeChange={setSelectedType}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={handleSubtypeChange}
+                onSubtypeChange={setSelectedSubtype}
                 selectedUnit={selectedUnit}
-                onUnitChange={handleUnitChange}
+                onUnitChange={setSelectedUnit}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -174,9 +179,13 @@ export default function NewProductPage() {
                     <FormItem>
                       <FormLabel className="text-gray-700">Nom du produit</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input 
+                          {...field} 
+                          placeholder="Nom du produit"
+                          className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -194,9 +203,11 @@ export default function NewProductPage() {
                           type="number"
                           step="0.01"
                           {...field}
+                          placeholder="19.99"
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -209,9 +220,14 @@ export default function NewProductPage() {
                   <FormItem>
                     <FormLabel className="text-gray-700">Description</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={4} />
+                      <Textarea 
+                        {...field} 
+                        rows={4}
+                        placeholder="Description détaillée du produit..."
+                        className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -226,9 +242,14 @@ export default function NewProductPage() {
                         Stock ({selectedUnit === "rouleau" ? "rouleaux" : "mètres"})
                       </FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input
+                          type="number"
+                          {...field}
+                          placeholder="100"
+                          className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -246,7 +267,7 @@ export default function NewProductPage() {
                           maxFiles={5}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -254,7 +275,7 @@ export default function NewProductPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg transition-colors"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -262,7 +283,7 @@ export default function NewProductPage() {
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Création en cours...
                   </>
-                ) : "Ajouter le produit"}
+                ) : "Publier le produit"}
               </Button>
             </form>
           </Form>
