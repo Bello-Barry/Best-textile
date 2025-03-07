@@ -20,8 +20,8 @@ type SelectFabricProps = {
   onTypeChange: (type: FabricType) => void;
   selectedSubtype: string;
   onSubtypeChange: (subtype: string) => void;
-  selectedUnit: FabricUnit;
-  onUnitChange: (unit: FabricUnit) => void;
+  selectedUnit: FabricUnit; // Changer string en FabricUnit
+  onUnitChange: (unit: FabricUnit) => void; // Ici aussi
 };
 
 export default function SelectFabric({
@@ -85,10 +85,10 @@ export default function SelectFabric({
       <div>
         <label className="block text-sm font-medium mb-2">Unité</label>
         <Select 
-          value={selectedUnit} 
-          onValueChange={value => onUnitChange(value as FabricUnit)}
-          disabled={!selectedType}
-        >
+  value={selectedUnit} 
+  onValueChange={value => onUnitChange(value as FabricUnit)} // Ajouter l'assertion
+  disabled={!selectedType}
+>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
