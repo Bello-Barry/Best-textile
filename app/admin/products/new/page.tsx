@@ -165,8 +165,8 @@ export default function NewProductPage() {
                 onTypeChange={setSelectedType}
                 selectedSubtype={selectedSubtype}
                 onSubtypeChange={setSelectedSubtype}
-                selectedUnit={selectedUnit}
-                onUnitChange={setSelectedUnit}
+                selectedUnit={selectedUnit} // Maintenant de type FabricUnit
+      onUnitChange={setSelectedUnit} // Fonction correctement typée
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
