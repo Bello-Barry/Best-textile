@@ -57,7 +57,7 @@ export default function NewProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedType, setSelectedType] = useState<FabricType>("gabardine");
   const [selectedSubtype, setSelectedSubtype] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState<string>("mètre");
+  const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
@@ -75,14 +75,12 @@ export default function NewProductPage() {
   });
 
   useEffect(() => {
-    if (selectedType) {
-      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
-      setSelectedUnit(defaultUnit);
-      form.setValue("unit", defaultUnit);
-      form.setValue("fabricSubtype", "");
-      setSelectedSubtype("");
-    }
-  }, [selectedType, form]);
+  if (selectedType) {
+    const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+    setSelectedUnit(defaultUnit as FabricUnit); // Ajouter l'assertion de type
+    form.setValue("unit", defaultUnit);
+  }
+}, [selectedType, form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {
