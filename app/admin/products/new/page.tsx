@@ -30,11 +30,13 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
+  FabricSubtype,
   FabricUnit,
   isFabricType,
   isFabricSubtype
 } from "@/types/fabric-config";
 
+// Définition du schéma de validation
 const schema = z.object({
   name: z.string().min(1, "Le nom est requis"),
   description: z.string().min(1, "La description est requise"),
@@ -42,7 +44,7 @@ const schema = z.object({
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
-  unit: z.enum(["mètre", "rouleau", "pièce", "complet", "yards", "bande", "set", "yard"]),
+  unit: z.enum(["mètre", "rouleau"]),
   images: z.array(
     z.string().refine(url => 
       url.startsWith('https://') && 
@@ -54,11 +56,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+interface ProductMetadata {
+  fabricType: FabricType;
+  fabricSubtype: FabricSubtype;
+  unit: FabricUnit;
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedType, setSelectedType] = useState<FabricType>("gabardine");
-  const [selectedSubtype, setSelectedSubtype] = useState("");
+  const [selectedType, setSelectedType] = useState<FabricType | null>(null);
+  const [selectedSubtype, setSelectedSubtype] = useState<FabricSubtype | "">("");
   const [selectedUnit, setSelectedUnit] = useState<FabricUnit>("mètre");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
@@ -69,105 +77,138 @@ export default function NewProductPage() {
       description: "",
       price: 0,
       stock: 0,
-      fabricType: "gabardine",
+      fabricType: "gabardine" as FabricType,
       fabricSubtype: "",
       unit: "mètre",
       images: []
     }
   });
 
+  // Initialisation des états au chargement
+  useEffect(() => {
+    setSelectedType("gabardine" as FabricType);
+  }, []);
+
+  // Synchronisation des valeurs du formulaire avec les états
   useEffect(() => {
     if (selectedType) {
       form.setValue("fabricType", selectedType);
       const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
       setSelectedUnit(defaultUnit);
       form.setValue("unit", defaultUnit);
-      form.setValue("fabricSubtype", "");
-      setSelectedSubtype("");
     }
   }, [selectedType, form]);
 
+  useEffect(() => {
+    if (selectedSubtype) {
+      form.setValue("fabricSubtype", selectedSubtype);
+    }
+  }, [selectedSubtype, form]);
+
+  useEffect(() => {
+    if (selectedUnit) {
+      form.setValue("unit", selectedUnit);
+    }
+  }, [selectedUnit, form]);
+
+  useEffect(() => {
+    if (uploadedImages.length > 0) {
+      form.setValue("images", uploadedImages);
+    }
+  }, [uploadedImages, form]);
+
   const handleSubmit = async (values: FormValues) => {
     try {
+      console.log("Formulaire soumis avec les valeurs:", values);
+
+      // Validation manuelle avant soumission
+      if (!selectedType) {
+        toast.error("Veuillez sélectionner un type de tissu");
+        return;
+      }
+
+      if (!selectedSubtype) {
+        toast.error("Veuillez sélectionner une variante de tissu");
+        return;
+      }
+
+      if (!values.name || !values.description) {
+        toast.error("Veuillez remplir tous les champs obligatoires");
+        return;
+      }
+
+      if (!values.images || values.images.length === 0) {
+        toast.error("Veuillez ajouter au moins une image");
+        return;
+      }
+
       setIsSubmitting(true);
-      
-      // Validation renforcée
-      if (!values.images?.length) {
-        throw new Error("Ajoutez au moins une image");
-      }
 
-      if (!selectedType || !isFabricType(selectedType)) {
-        throw new Error("Type de tissu invalide");
-      }
+      // Création du metadata objet
+      const metadata: ProductMetadata = {
+        fabricType: selectedType,
+        fabricSubtype: selectedSubtype as FabricSubtype,
+        unit: selectedUnit
+      };
 
-      if (!selectedSubtype || !isFabricSubtype(selectedType, selectedSubtype)) {
-        throw new Error("Sélectionnez une variante valide");
-      }
-
-      // Construction du payload
-      const payload = {
-        name: values.name.trim(),
-        description: values.description.trim(),
+      // Préparation des données à envoyer
+      const productData = {
+        name: values.name,
+        description: values.description,
         price: Number(values.price),
         stock: Number(values.stock),
         images: values.images,
-        metadata: {
-          fabricType: selectedType,
-          fabricSubtype: selectedSubtype,
-          unit: selectedUnit
-        },
-        created_at: new Date().toISOString()
+        metadata
       };
 
-      console.log("Soumission des données:", payload);
+      console.log("Données envoyées à Supabase:", productData);
 
-      // Envoi à Supabase
+      // Envoi des données à Supabase avec gestion d'erreur
       const { data, error } = await supabase
         .from("products")
-        .insert([payload])
+        .insert([productData])
         .select();
 
       if (error) {
-        console.error("Erreur Supabase:", {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        });
-        throw new Error(error.message || "Erreur de base de données");
+        console.error("Erreur Supabase:", error);
+        throw new Error(error.message || "Erreur lors de la création du produit");
       }
 
-      if (!data || data.length === 0) {
-        throw new Error("Aucune donnée retournée par l'API");
-      }
-
-      toast.success("Produit créé avec succès !");
+      toast.success("Produit créé avec succès");
       router.push("/admin/products");
-
+      
     } catch (error: any) {
       console.error("Erreur complète:", error);
-      toast.error(error.message || "Erreur lors de la création");
+      toast.error(error.message || "Erreur lors de la création du produit");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleImageUpload = (urls: string[]) => {
-    const validUrls = urls.filter(url => 
-      url.startsWith('https://') && 
-      url.includes('.supabase.co/storage/v1/object/public/images')
-    );
-    
-    if (validUrls.length === 0) {
-      form.setError("images", {
-        type: "manual",
-        message: "Au moins une image valide est requise"
-      });
-      return;
+  // Gestionnaire pour le changement de type de tissu
+  const handleTypeChange = (type: FabricType | null) => {
+    console.log("Changement de type:", type);
+    setSelectedType(type);
+    setSelectedSubtype(""); // Réinitialiser le sous-type
+    if (type) {
+      form.setValue("fabricType", type);
+      form.setValue("fabricSubtype", "");
     }
+  };
 
-    setUploadedImages(validUrls);
-    form.setValue("images", validUrls);
-    form.clearErrors("images");
+  // Gestionnaire pour le changement de sous-type
+  const handleSubtypeChange = (subtype: string) => {
+  if (subtype && selectedType && isFabricSubtype(selectedType, subtype)) {
+    setSelectedSubtype(subtype);
+    form.setValue("fabricSubtype", subtype);
+  }
+};
+
+  // Gestionnaire pour les images téléchargées
+  const handleImageUpload = (urls: string[]) => {
+    console.log("Images téléchargées:", urls);
+    setUploadedImages(urls);
+    form.setValue("images", urls);
   };
 
   return (
@@ -186,9 +227,9 @@ export default function NewProductPage() {
             >
               <SelectFabric
                 selectedType={selectedType}
-                onTypeChange={setSelectedType}
+                onTypeChange={handleTypeChange}
                 selectedSubtype={selectedSubtype}
-                onSubtypeChange={setSelectedSubtype}
+                onSubtypeChange={handleSubtypeChange}
                 selectedUnit={selectedUnit}
                 onUnitChange={setSelectedUnit}
               />
@@ -203,7 +244,6 @@ export default function NewProductPage() {
                       <FormControl>
                         <Input 
                           {...field} 
-                          placeholder="Nom du produit"
                           className="focus-visible:ring-2 focus-visible:ring-blue-500"
                         />
                       </FormControl>
@@ -211,7 +251,6 @@ export default function NewProductPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="price"
@@ -225,7 +264,6 @@ export default function NewProductPage() {
                           type="number"
                           step="0.01"
                           {...field}
-                          placeholder="19.99"
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                         />
                       </FormControl>
@@ -244,8 +282,7 @@ export default function NewProductPage() {
                     <FormControl>
                       <Textarea 
                         {...field} 
-                        rows={4}
-                        placeholder="Description détaillée du produit..."
+                        rows={4} 
                         className="focus-visible:ring-2 focus-visible:ring-blue-500"
                       />
                     </FormControl>
@@ -267,7 +304,6 @@ export default function NewProductPage() {
                         <Input
                           type="number"
                           {...field}
-                          placeholder="100"
                           className="[appearance:textfield] focus-visible:ring-2 focus-visible:ring-blue-500"
                         />
                       </FormControl>
@@ -275,7 +311,6 @@ export default function NewProductPage() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="images"
@@ -287,7 +322,6 @@ export default function NewProductPage() {
                           onUpload={handleImageUpload}
                           bucket="images"
                           maxFiles={5}
-                          acceptedFormats={["image/jpeg", "image/png"]}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
@@ -298,7 +332,7 @@ export default function NewProductPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 transition-colors h-12 text-lg"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -306,7 +340,9 @@ export default function NewProductPage() {
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Création en cours...
                   </>
-                ) : "Publier le produit"}
+                ) : (
+                  "Ajouter le produit"
+                )}
               </Button>
             </form>
           </Form>
@@ -314,4 +350,4 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
-}
+    }
