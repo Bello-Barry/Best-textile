@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollAreaProps } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Importez uniquement ScrollArea
 import {
   Dialog,
   DialogContent,
@@ -100,10 +100,10 @@ DrawerTitle.displayName = "DrawerTitle";
 const DrawerDescription = DialogDescription;
 DrawerDescription.displayName = "DrawerDescription";
 
-// Correction de l'erreur de typage pour `dir`
-type Direction = "ltr" | "rtl";
+// Utilisation de React.ComponentProps pour extraire les propriétés de ScrollArea
+type ScrollAreaProps = React.ComponentProps<typeof ScrollArea>;
 
-const DrawerBody = ({ className, dir, ...props }: React.HTMLAttributes<HTMLDivElement> & { dir?: Direction }) => (
+const DrawerBody = ({ className, dir, ...props }: React.HTMLAttributes<HTMLDivElement> & { dir?: "ltr" | "rtl" }) => (
   <ScrollArea
     className={cn("p-4 px-6 flex-1 h-full", className)}
     dir={dir} // `dir` est maintenant correctement typé
