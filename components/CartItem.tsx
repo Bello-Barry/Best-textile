@@ -9,7 +9,7 @@ export default function CartItem({ item }: { item: any }) {
   return (
     <div className="border-b py-4">
       <h2 className="text-xl font-semibold">{item.name}</h2>
-      <p>Prix total: {item.price.toFixed(2)} €</p>
+      <p>Prix total: {item.price.toFixed(2)} FCFA</p>
       <div className="flex items-center gap-2">
         <label>Quantité:</label>
         <input
