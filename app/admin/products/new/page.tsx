@@ -30,6 +30,7 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
+FabricUnit,
   isFabricType
 } from "@/types/fabric-config";
 
