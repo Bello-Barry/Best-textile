@@ -67,9 +67,9 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         drawerVariants({ size }),
-        "translate-y-0 animate-in slide-in-from-bottom duration-300",
-        "!rounded-b-none !rounded-t-xl !p-0 !border-t !border-x !border-border",
-        "!top-auto !bottom-0 !left-0 !right-0",
+        "fixed inset-0 m-auto w-full max-w-md h-fit", // Centrage et largeur maximale
+        "animate-in fade-in-0 zoom-in-95 duration-300", // Animation d'apparition
+        "rounded-lg border bg-background p-6 shadow-lg", // Styles supplémentaires
         className
       )}
       {...props}
