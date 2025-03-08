@@ -28,13 +28,13 @@ export const FABRIC_CONFIG = {
   },
   bazin: {
     name: "Bazin",
-    subtypes: ["Riche", "Getzner", "Super", "Doré", "Impérial"],
+    subtypes: ["Riche", "Getzner", "Superfanga", "Doré", "Impérial"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
   soie: {
     name: "Soie",
-    subtypes: ["Naturelle", "Charmeuse", "Dupion", "Satinée", "Organza"],
+    subtypes: ["uni", "perlée Bazin", "Bazin", "fleurie", "plissée"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
@@ -46,13 +46,13 @@ export const FABRIC_CONFIG = {
   },
   satin: {
     name: "Satin",
-    subtypes: ["De Paris", "Duchesse", "Charme", "Coton"],
+    subtypes: ["De Paris", "Duchesse", "riche", "Coton"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
   kente: {
     name: "Kente",
-    subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman", "Asasia", "Babadua"],
+    subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman","traditionnel", "Asasia", "Babadua"],
     units: ["pièce", "mètre"] as const,
     defaultUnit: "mètre"
   },
@@ -110,15 +110,25 @@ export const FABRIC_CONFIG = {
     units: ["yards", "complet", "mètre"] as const,
     defaultUnit: "mètre"
   },
-  shweshwe: {
-    name: "Shweshwe",
-    subtypes: ["Three Cats", "Da Gama", "Spruce", "Indigo", "Toto"],
+  Super: {
+    name: "Super",
+    subtypes: ["cent", "cachemire", "deux cent", "Indigo", "Toto"],
+    units: ["mètre"] as const,
+    defaultUnit: "mètre"
+  },tulle: {
+    name: "Tulle",
+    subtypes: [ "doux", "Toto"],
+    units: ["mètre"] as const,
+    defaultUnit: "mètre"
+  },Accessoires: {
+    name: "Accessoires",
+    subtypes: ["billet", "cachemire", "deux cent", "Indigo", "Toto"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
-  aso_oke: {
-    name: "Aso-oke",
-    subtypes: ["Sanyan", "Alaari", "Etu", "Petuje", "Olowu"],
+  Dentelle: {
+    name: "Dentelle",
+    subtypes: ["cérémoniev16", "v10", "uni", "Petuje", "Olowu"],
     units: [ "mètre"] as const,
     defaultUnit: "mètre"
   }
