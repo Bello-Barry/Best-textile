@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-toastify";
-import { ShoppingCart, Check } from "lucide-react";
+import { ShoppingCart, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface ProductCardProps {
   product: Product;
@@ -20,6 +21,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCartStore();
   const [quantity, setQuantity] = useState(product.metadata.unit === "rouleau" ? 1 : 0.5);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const unitLabel = product.metadata.unit;
   const stepValue = unitLabel === "rouleau" ? 1 : 0.5;
@@ -77,6 +79,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     );
   };
 
+  const handleImageNavigation = (direction: "next" | "prev") => {
+    setCurrentImageIndex(prev => direction === "next" 
+      ? (prev + 1) % product.images.length
+      : (prev - 1 + product.images.length) % product.images.length);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -85,20 +93,74 @@ const ProductCard = ({ product }: ProductCardProps) => {
       className="h-full"
     >
       <Card 
-        className="w-full max-w-sm mx-auto hover:shadow-lg transition-shadow h-full flex flex-col cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full max-w-sm mx-auto hover:shadow-lg transition-shadow h-full flex flex-col"
       >
-        <div className="relative aspect-square rounded-t-lg overflow-hidden">
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority
-          />
+        {/* Section image avec navigation */}
+        <div 
+          className="relative aspect-square rounded-t-lg overflow-hidden"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <Dialog>
+            <DialogTrigger asChild>
+              <button 
+                className="absolute right-2 top-2 z-10 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+                aria-label="Agrandir l'image"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </DialogTrigger>
+            
+            <Image
+              src={product.images[currentImageIndex]}
+              alt={product.name}
+              fill
+              className="object-cover cursor-pointer"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+            />
+            
+            <DialogContent className="max-w-4xl p-0 overflow-hidden">
+              <div className="relative h-[80vh]">
+                <Image
+                  src={product.images[currentImageIndex]}
+                  alt={product.name}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {product.images.length > 1 && (
+            <>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                {currentImageIndex + 1}/{product.images.length}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleImageNavigation('prev');
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+                aria-label="Image précédente"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleImageNavigation('next');
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+                aria-label="Image suivante"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
         </div>
 
+        {/* Section informations de base */}
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold truncate">
             {product.name}
@@ -109,6 +171,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </CardHeader>
 
+        {/* Section dépliée */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -118,7 +181,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               transition={{ duration: 0.3 }}
             >
               <CardContent className="pt-0 space-y-4">
-                <div className="text-sm text-muted-foreground line-clamp-3">
+                <div className="text-sm text-muted-foreground">
                   {product.description}
                 </div>
 
