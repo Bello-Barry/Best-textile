@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Importez uniquement ScrollArea
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -43,9 +43,10 @@ interface DrawerProps extends React.ComponentPropsWithoutRef<typeof Dialog>, Var
   className?: string;
 }
 
-const Drawer = React.forwardRef<React.ElementRef<typeof Dialog>, DrawerProps>(({ children, ...props }, ref) => (
-  <Dialog {...props} ref={ref}>
-    {children}
+// Correction : Utilisation de forwardRef pour Dialog
+const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(({ children, ...props }, ref) => (
+  <Dialog {...props}>
+    <div ref={ref}>{children}</div>
   </Dialog>
 ));
 Drawer.displayName = "Drawer";
