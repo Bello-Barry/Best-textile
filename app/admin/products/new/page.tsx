@@ -44,7 +44,7 @@ const schema = z.object({
   stock: z.coerce.number().min(0, "Le stock ne peut pas être négatif"),
   fabricType: z.string().refine(isFabricType, "Type de tissu invalide"),
   fabricSubtype: z.string().min(1, "La variante est requise"),
-  unit: z.enum(["mètre", "rouleau"]),
+  unit: z.enum(["mètre", "rouleau", "pièce", "complet", "yards", "bande", "yard"]),
   images: z.array(
     z.string().refine(url => 
       url.startsWith('https://') && 
@@ -92,13 +92,11 @@ export default function NewProductPage() {
   // Synchronisation des valeurs du formulaire avec les états
   useEffect(() => {
     if (selectedType) {
-      form.setValue("fabricType", selectedType);
-      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit as FabricUnit;
       setSelectedUnit(defaultUnit);
       form.setValue("unit", defaultUnit);
     }
   }, [selectedType, form]);
-
   useEffect(() => {
     if (selectedSubtype) {
       form.setValue("fabricSubtype", selectedSubtype);
