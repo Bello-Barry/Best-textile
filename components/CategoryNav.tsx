@@ -6,17 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Shirt,
   Sofa,
-  Cylinder,
   Box,
   ListFilter,
   ChevronRight,
-  Factory,
-  Grid,
-  Zap,
-  Scissors,
-  Gift,
-  Feather,
-  Cloud,
+  X,
 } from "lucide-react";
 import {
   FABRIC_CONFIG,
@@ -24,15 +17,16 @@ import {
   getAllFabricTypes,
   isFabricType,
 } from "@/types/fabric-config";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
-// Interface pour les propriétés du composant
 interface CategoryNavProps {
   products: Product[];
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
 }
 
-// Interface pour le type Product
 interface Product {
   id: string;
   name: string;
@@ -41,30 +35,10 @@ interface Product {
     fabricSubtype?: string;
     unit?: string;
   };
-  // Ajoutez d'autres propriétés si nécessaire
 }
 
-// Mapping des icônes
 const iconMap: Record<FabricType, React.ReactNode> = {
-  gabardine: <Factory className="h-5 w-5 mr-2" />,
-  bazin: <Cylinder className="h-5 w-5 mr-2" />,
-  soie: <Shirt className="h-5 w-5 mr-2" />,
-  velours: <Grid className="h-5 w-5 mr-2" />,
-  satin: <Zap className="h-5 w-5 mr-2" />,
-  kente: <Scissors className="h-5 w-5 mr-2" />,
-  lin: <Feather className="h-5 w-5 mr-2" />,
-  mousseline: <Cloud className="h-5 w-5 mr-2" />,
-  pagne: <Gift className="h-5 w-5 mr-2" />,
-  moustiquaire: <Grid className="h-5 w-5 mr-2" />,
-  brocart: <Shirt className="h-5 w-5 mr-2" />,
-  bogolan: <Scissors className="h-5 w-5 mr-2" />,
-  dashiki: <Shirt className="h-5 w-5 mr-2" />,
-  adire: <Grid className="h-5 w-5 mr-2" />,
-  ankara: <Gift className="h-5 w-5 mr-2" />,
-  Dentelle: <Feather className="h-5 w-5 mr-2" />,
-  Accessoires: <Cloud className="h-5 w-5 mr-2" />,
-Super: <Shirt className="h-5 w-5 mr-2" />,
-tulle: <Gift className="h-5 w-5 mr-2" />,
+  // ... (votre mapping d'icônes existant)
 };
 
 const CategoryNav = ({
@@ -72,71 +46,113 @@ const CategoryNav = ({
   selectedCategory,
   setSelectedCategory,
 }: CategoryNavProps) => {
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const fabricTypes = useMemo(() => getAllFabricTypes(), []);
 
-  const baseCategories = useMemo(
-    () => [
-      {
-        id: "all",
-        name: "Tous les tissus",
-        icon: <Box className="h-5 w-5 mr-2" />,
-        count: products.length,
-      },
-      ...fabricTypes.map((type) => ({
-        id: type,
-        name: FABRIC_CONFIG[type].name,
-        icon: iconMap[type] || <Box className="h-5 w-5 mr-2" />,
-        count: 0,
-      })),
-      {
-        id: "other",
-        name: "Autres textiles",
-        icon: <Sofa className="h-5 w-5 mr-2" />,
-        count: 0,
-      },
-    ],
-    [fabricTypes, products.length]
-  );
+  // Catégories de base avec comptage
+  const baseCategories = useMemo(() => [
+    {
+      id: "all",
+      name: "Tous",
+      icon: <Box className="h-5 w-5 mr-2" />,
+      count: products.length,
+    },
+    ...fabricTypes.map((type) => ({
+      id: type,
+      name: FABRIC_CONFIG[type].name,
+      icon: iconMap[type] || <Box className="h-5 w-5 mr-2" />,
+      count: products.filter(p => p.metadata.fabricType === type).length,
+    })),
+    {
+      id: "other",
+      name: "Autres",
+      icon: <Sofa className="h-5 w-5 mr-2" />,
+      count: products.filter(p => !isFabricType(p.metadata.fabricType)).length,
+    }
+  ], [fabricTypes, products]);
 
-  const [categories, setCategories] = useState(baseCategories);
-
-  useEffect(() => {
-    const updated = baseCategories.map((cat) => {
-      if (cat.id === "all") return { ...cat, count: products.length };
-      if (cat.id === "other") {
-        return {
-          ...cat,
-          count: products.filter((p) => !isFabricType(p.metadata.fabricType))
-            .length,
-        };
-      }
-      return {
-        ...cat,
-        count: products.filter((p) => p.metadata.fabricType === cat.id).length,
-      };
-    });
-
-    setCategories(updated);
-  }, [products, baseCategories]);
+  // Filtrage des catégories
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm) return baseCategories;
+    return baseCategories.filter(cat =>
+      cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [baseCategories, searchTerm]);
 
   return (
-    <div className="bg-background border-b">
+    <div className="bg-background border-b sticky top-0 z-40">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between py-4">
-          <ScrollArea className="whitespace-nowrap pb-2">
-            <div className="flex space-x-4">
-              {categories.map((category) => (
+        <div className="flex items-center justify-between py-4 gap-4">
+          {/* Filtres mobiles */}
+          <Drawer open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="sm" className="md:hidden">
+                <ListFilter className="h-4 w-4 mr-2" />
+                Filtres
+              </Button>
+            </DrawerTrigger>
+            
+            <DrawerContent>
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Filtres</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsFilterOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Input
+                  placeholder="Rechercher une catégorie..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  {filteredCategories.map((category) => (
+                    <Button
+                      key={category.id}
+                      variant={
+                        selectedCategory === category.id ? "default" : "outline"
+                      }
+                      className="flex-col h-auto py-3"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setIsFilterOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center">
+                        {category.icon}
+                        {category.name}
+                      </div>
+                      <Badge variant="secondary" className="mt-1">
+                        {category.count}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </DrawerContent>
+          </Drawer>
+
+          {/* Filtres desktop */}
+          <ScrollArea className="hidden md:block flex-1">
+            <div className="flex space-x-2 pb-2">
+              {baseCategories.map((category) => (
                 <Button
                   key={category.id}
                   variant={
                     selectedCategory === category.id ? "secondary" : "ghost"
                   }
-                  className={`rounded-full px-6 py-2 flex items-center transition-colors ${
-                    selectedCategory === category.id
-                      ? "bg-primary/10 text-primary hover:bg-primary/20"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className={`rounded-full px-4 py-2 flex items-center ${
+                    category.count === 0 ? "opacity-50 cursor-not-allowed" : ""
                   }`}
-                  onClick={() => setSelectedCategory(category.id)}
+                  onClick={() => category.count > 0 && setSelectedCategory(category.id)}
+                  disabled={category.count === 0}
                 >
                   {category.icon}
                   {category.name}
@@ -148,16 +164,16 @@ const CategoryNav = ({
             </div>
           </ScrollArea>
 
-          <div className="flex items-center space-x-4 pl-6 border-l">
-            <Button
-              variant="ghost"
-              className="flex items-center dark:hover:bg-gray-800"
-            >
-              <ListFilter className="h-5 w-5 mr-2" />
-              Filtres avancés
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
+          {/* Filtres avancés (desktop) */}
+          <Button
+            variant="ghost"
+            className="hidden md:flex items-center"
+            onClick={() => console.log("Filtres avancés")}
+          >
+            <ListFilter className="h-5 w-5 mr-2" />
+            Filtres avancés
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
       </div>
     </div>
