@@ -32,6 +32,7 @@ const drawerVariants = cva(
 interface DrawerProps extends React.ComponentPropsWithoutRef<typeof Dialog>, 
   VariantProps<typeof drawerVariants> {
   shouldScaleBackground?: boolean;
+  className?: string;
 }
 
 const Drawer = React.forwardRef<
