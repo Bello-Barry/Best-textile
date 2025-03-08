@@ -7,7 +7,6 @@ export type FabricUnit =
   | "complet" 
   | "yards" 
   | "bande" 
-  | "set" 
   | "yard";
 
 export type FabricSubtype = string; 
@@ -120,8 +119,8 @@ export const FABRIC_CONFIG = {
   aso_oke: {
     name: "Aso-oke",
     subtypes: ["Sanyan", "Alaari", "Etu", "Petuje", "Olowu"],
-    units: ["set", "mètre"] as const,
-    defaultUnit: "set"
+    units: [ "mètre"] as const,
+    defaultUnit: "mètre"
   }
 } satisfies Record<string, FabricConfigItem>;
 
