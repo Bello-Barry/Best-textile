@@ -66,10 +66,12 @@ const DrawerContent = React.forwardRef<
     <DialogContent
       ref={ref}
       className={cn(
-        drawerVariants({ size }),
         "fixed inset-0 m-auto w-full max-w-md h-fit", // Centrage et largeur maximale
         "animate-in fade-in-0 zoom-in-95 duration-300", // Animation d'apparition
         "rounded-lg border bg-background p-6 shadow-lg", // Styles supplémentaires
+        "overflow-y-auto", // Permettre le défilement si le contenu est trop long
+        "transform -translate-x-1/2 -translate-y-1/2", // Centrage précis
+        "top-1/2 left-1/2", // Positionnement au centre
         className
       )}
       {...props}
