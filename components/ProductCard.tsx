@@ -20,10 +20,10 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCartStore();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(product.metadata.unit === "rouleau" ? 1 : 0.1);
+  const [quantity, setQuantity] = useState(product.metadata.unit === "rouleau" ? 1 : 0.5);
 
   const unitLabel = product.metadata.unit;
-  const stepValue = unitLabel === "rouleau" ? 1 : 0.1;
+  const stepValue = unitLabel === "rouleau" ? 1 : 0.5;
   const maxStock = product.stock;
   const totalPrice = quantity * product.price;
 
@@ -200,37 +200,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex flex-1 items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setQuantity(prev => Math.max(prev - stepValue, stepValue))}
-                  disabled={quantity <= stepValue}
-                  className="flex-1"
-                  aria-label="Réduire la quantité"
-                >
-                  -
-                </Button>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  min={stepValue}
-                  max={maxStock}
-                  step={stepValue}
-                  className="text-center [appearance:textfield] flex-2"
-                  aria-label="Quantité"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setQuantity(prev => Math.min(prev + stepValue, maxStock))}
-                  disabled={quantity >= maxStock}
-                  className="flex-1"
-                  aria-label="Augmenter la quantité"
-                >
-                  +
-                </Button>
-              </div>
+              
+                
+        
 
               <Button
                 onClick={handleAddToCart}
