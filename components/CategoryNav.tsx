@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react"; // Ajout de useMemo
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Shirt, Sofa, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { FABRIC_CONFIG, FabricType, getAllFabricTypes, isFabricType } from "@/types/fabric-config";
 
@@ -76,7 +75,7 @@ const CategoryNav = ({ products, selectedCategory, setSelectedCategory }: Catego
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-4 gap-4">
           {/* Liste horizontale défilable des catégories */}
-          <ScrollArea orientation="horizontal" className="w-full">
+          <div className="w-full overflow-x-auto"> {/* Conteneur défilable horizontalement */}
             <div className="flex space-x-2 pb-2">
               {baseCategories.map((category) => (
                 <Button
@@ -96,7 +95,7 @@ const CategoryNav = ({ products, selectedCategory, setSelectedCategory }: Catego
                 </Button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
