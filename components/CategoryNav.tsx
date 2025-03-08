@@ -17,9 +17,10 @@ import {
   getAllFabricTypes,
   isFabricType,
 } from "@/types/fabric-config";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer"; // Si vous utilisez Shadcn UI
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"; // Alternative si Drawer n'est pas disponible
 
 interface CategoryNavProps {
   products: Product[];
@@ -38,7 +39,25 @@ interface Product {
 }
 
 const iconMap: Record<FabricType, React.ReactNode> = {
-  // ... (votre mapping d'icônes existant)
+  gabardine: <Shirt className="h-5 w-5 mr-2" />,
+  bazin: <Shirt className="h-5 w-5 mr-2" />,
+  soie: <Shirt className="h-5 w-5 mr-2" />,
+  velours: <Shirt className="h-5 w-5 mr-2" />,
+  satin: <Shirt className="h-5 w-5 mr-2" />,
+  kente: <Shirt className="h-5 w-5 mr-2" />,
+  lin: <Shirt className="h-5 w-5 mr-2" />,
+  mousseline: <Shirt className="h-5 w-5 mr-2" />,
+  pagne: <Shirt className="h-5 w-5 mr-2" />,
+  moustiquaire: <Shirt className="h-5 w-5 mr-2" />,
+  brocart: <Shirt className="h-5 w-5 mr-2" />,
+  bogolan: <Shirt className="h-5 w-5 mr-2" />,
+  dashiki: <Shirt className="h-5 w-5 mr-2" />,
+  adire: <Shirt className="h-5 w-5 mr-2" />,
+  ankara: <Shirt className="h-5 w-5 mr-2" />,
+  Dentelle: <Shirt className="h-5 w-5 mr-2" />,
+  Accessoires: <Shirt className="h-5 w-5 mr-2" />,
+  Super: <Shirt className="h-5 w-5 mr-2" />,
+  tulle: <Shirt className="h-5 w-5 mr-2" />,
 };
 
 const CategoryNav = ({
