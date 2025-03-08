@@ -34,7 +34,7 @@ export const FABRIC_CONFIG = {
   },
   soie: {
     name: "Soie",
-    subtypes: ["uni", "perlée Bazin", "Bazin", "fleurie", "plissée"],
+    subtypes: ["uni", "perlée Bazin", "Bazin", "fleurie", "plissée", "motif pagne"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
