@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo } from "react"; // Ajout de useMemo
 import { cn } from "@/lib/utils";
 import { Shirt, Sofa, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
