@@ -252,7 +252,7 @@ const AdminPage: React.FC = () => {
                       <TableCell className="font-medium">
                         {product.name}
                       </TableCell>
-                      <TableCell>{product.price} €/m</TableCell>
+                      <TableCell>{product.price} FCFA/m</TableCell>
                       <TableCell>{product.stock}</TableCell>
                       <TableCell className="capitalize">
                         {product.type}
@@ -314,7 +314,7 @@ const AdminPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs ${
+                          className={`px-2 py-1 rounded-full text-xs FCFA{
                             order.status === "completed"
                               ? "bg-green-100 text-green-800"
                               : order.status === "processing"
