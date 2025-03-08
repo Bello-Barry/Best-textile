@@ -30,8 +30,9 @@ import SelectFabric from "@/components/SelectFabric";
 import { 
   FABRIC_CONFIG,
   FabricType,
-FabricUnit,
-  isFabricType
+  FabricUnit,
+  isFabricType,
+  isFabricSubtype
 } from "@/types/fabric-config";
 
 const schema = z.object({
@@ -76,29 +77,37 @@ export default function NewProductPage() {
   });
 
   useEffect(() => {
-  if (selectedType) {
-    const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
-    setSelectedUnit(defaultUnit as FabricUnit); // Ajouter l'assertion de type
-    form.setValue("unit", defaultUnit);
-  }
-}, [selectedType, form]);
+    if (selectedType) {
+      form.setValue("fabricType", selectedType);
+      const defaultUnit = FABRIC_CONFIG[selectedType].defaultUnit;
+      setSelectedUnit(defaultUnit);
+      form.setValue("unit", defaultUnit);
+      form.setValue("fabricSubtype", "");
+      setSelectedSubtype("");
+    }
+  }, [selectedType, form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
       
-      // Validation étendue
+      // Validation renforcée
       if (!values.images?.length) {
         throw new Error("Ajoutez au moins une image");
       }
 
       if (!selectedType || !isFabricType(selectedType)) {
-        throw new Error("Sélectionnez un type de tissu valide");
+        throw new Error("Type de tissu invalide");
       }
 
+      if (!selectedSubtype || !isFabricSubtype(selectedType, selectedSubtype)) {
+        throw new Error("Sélectionnez une variante valide");
+      }
+
+      // Construction du payload
       const payload = {
-        name: values.name,
-        description: values.description,
+        name: values.name.trim(),
+        description: values.description.trim(),
         price: Number(values.price),
         stock: Number(values.stock),
         images: values.images,
@@ -110,23 +119,24 @@ export default function NewProductPage() {
         created_at: new Date().toISOString()
       };
 
-      console.log("Données envoyées:", payload);
+      console.log("Soumission des données:", payload);
 
+      // Envoi à Supabase
       const { data, error } = await supabase
         .from("products")
         .insert([payload])
         .select();
 
       if (error) {
-        console.error("Erreur Supabase détaillée:", {
+        console.error("Erreur Supabase:", {
           code: error.code,
           message: error.message,
           details: error.details
         });
-        throw error;
+        throw new Error(error.message || "Erreur de base de données");
       }
 
-      if (!data) {
+      if (!data || data.length === 0) {
         throw new Error("Aucune donnée retournée par l'API");
       }
 
@@ -135,16 +145,29 @@ export default function NewProductPage() {
 
     } catch (error: any) {
       console.error("Erreur complète:", error);
-      const errorMessage = error.message || error.details?.message || "Erreur inconnue";
-      toast.error(`Échec de la création : ${errorMessage}`);
+      toast.error(error.message || "Erreur lors de la création");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleImageUpload = (urls: string[]) => {
-    setUploadedImages(urls);
-    form.setValue("images", urls);
+    const validUrls = urls.filter(url => 
+      url.startsWith('https://') && 
+      url.includes('.supabase.co/storage/v1/object/public/images')
+    );
+    
+    if (validUrls.length === 0) {
+      form.setError("images", {
+        type: "manual",
+        message: "Au moins une image valide est requise"
+      });
+      return;
+    }
+
+    setUploadedImages(validUrls);
+    form.setValue("images", validUrls);
+    form.clearErrors("images");
   };
 
   return (
@@ -166,8 +189,8 @@ export default function NewProductPage() {
                 onTypeChange={setSelectedType}
                 selectedSubtype={selectedSubtype}
                 onSubtypeChange={setSelectedSubtype}
-                selectedUnit={selectedUnit} // Maintenant de type FabricUnit
-      onUnitChange={setSelectedUnit} // Fonction correctement typée
+                selectedUnit={selectedUnit}
+                onUnitChange={setSelectedUnit}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -264,6 +287,7 @@ export default function NewProductPage() {
                           onUpload={handleImageUpload}
                           bucket="images"
                           maxFiles={5}
+                          acceptedFormats={["image/jpeg", "image/png"]}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-sm" />
