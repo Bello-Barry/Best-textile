@@ -6,7 +6,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogPortal, DialogOverlay, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogOverlay,
+  DialogPortal,
+  DialogClose,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 /**
  * Ce composant Drawer est une implémentation personnalisée utilisant Dialog de shadcn/ui
@@ -38,23 +47,17 @@ interface DrawerProps extends React.ComponentPropsWithoutRef<typeof Dialog>,
 const Drawer = React.forwardRef<
   React.ElementRef<typeof Dialog>,
   DrawerProps
->(({ className, children, size, ...props }, ref) => (
+>(({ children, ...props }, ref) => (
   <Dialog {...props}>
     {children}
   </Dialog>
 ));
 Drawer.displayName = "Drawer";
 
-const DrawerTrigger = React.forwardRef<
-  React.ElementRef<typeof Dialog.Trigger>,
-  React.ComponentPropsWithoutRef<typeof Dialog.Trigger>
->(({ ...props }, ref) => <Dialog.Trigger ref={ref} {...props} />);
+const DrawerTrigger = DialogTrigger;
 DrawerTrigger.displayName = "DrawerTrigger";
 
-const DrawerClose = React.forwardRef<
-  React.ElementRef<typeof Dialog.Close>,
-  React.ComponentPropsWithoutRef<typeof Dialog.Close>
->(({ ...props }, ref) => <Dialog.Close ref={ref} {...props} />);
+const DrawerClose = DialogClose;
 DrawerClose.displayName = "DrawerClose";
 
 const DrawerContent = React.forwardRef<
@@ -77,10 +80,10 @@ const DrawerContent = React.forwardRef<
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
       
-      <DrawerClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+      <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
-      </DrawerClose>
+      </DialogClose>
       
       {children}
     </DialogContent>
@@ -110,31 +113,10 @@ const DrawerFooter = ({
 );
 DrawerFooter.displayName = "DrawerFooter";
 
-const DrawerTitle = React.forwardRef<
-  React.ElementRef<typeof Dialog.Title>,
-  React.ComponentPropsWithoutRef<typeof Dialog.Title>
->(({ className, ...props }, ref) => (
-  <Dialog.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-));
+const DrawerTitle = DialogTitle;
 DrawerTitle.displayName = "DrawerTitle";
 
-const DrawerDescription = React.forwardRef<
-  React.ElementRef<typeof Dialog.Description>,
-  React.ComponentPropsWithoutRef<typeof Dialog.Description>
->(({ className, ...props }, ref) => (
-  <Dialog.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
+const DrawerDescription = DialogDescription;
 DrawerDescription.displayName = "DrawerDescription";
 
 const DrawerBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
