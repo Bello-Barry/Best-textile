@@ -61,8 +61,10 @@ const iconMap: Record<FabricType, React.ReactNode> = {
   dashiki: <Shirt className="h-5 w-5 mr-2" />,
   adire: <Grid className="h-5 w-5 mr-2" />,
   ankara: <Gift className="h-5 w-5 mr-2" />,
-  shweshwe: <Feather className="h-5 w-5 mr-2" />,
-  aso_oke: <Cloud className="h-5 w-5 mr-2" />,
+  Dentelle: <Feather className="h-5 w-5 mr-2" />,
+  Accessoires: <Cloud className="h-5 w-5 mr-2" />,
+Super: <Shirt className="h-5 w-5 mr-2" />,
+tulle: <Gift className="h-5 w-5 mr-2" />,
 };
 
 const CategoryNav = ({
