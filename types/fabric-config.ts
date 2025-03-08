@@ -54,7 +54,7 @@ export const FABRIC_CONFIG = {
     name: "Kente",
     subtypes: ["Adweneasa", "Sika Futuro", "Oyokoman", "Asasia", "Babadua"],
     units: ["pièce", "mètre"] as const,
-    defaultUnit: "pièce"
+    defaultUnit: "mètre"
   },
   lin: {
     name: "Lin",
@@ -78,7 +78,7 @@ export const FABRIC_CONFIG = {
     name: "Moustiquaire",
     subtypes: ["Simple", "Brodée", "Renforcée", "Colorée"],
     units: ["pièce", "mètre"] as const,
-    defaultUnit: "pièce"
+    defaultUnit: "mètre"
   },
   brocart: {
     name: "Brocart",
@@ -90,25 +90,25 @@ export const FABRIC_CONFIG = {
     name: "Bogolan",
     subtypes: ["Traditionnel", "Moderne", "Bamanan", "Ségovien", "Minianka"],
     units: ["bande", "mètre"] as const,
-    defaultUnit: "bande"
+    defaultUnit: "mètre"
   },
   dashiki: {
     name: "Dashiki",
     subtypes: ["Classique", "Brodé", "Angelina", "Festif", "Royal"],
     units: ["pièce"] as const,
-    defaultUnit: "pièce"
+    defaultUnit: "mètre"
   },
   adire: {
     name: "Adire",
     subtypes: ["Eleko", "Alabere", "Oniko", "Batik", "Moderne"],
     units: ["yard", "mètre"] as const,
-    defaultUnit: "yard"
+    defaultUnit: "mètre"
   },
   ankara: {
     name: "Ankara",
     subtypes: ["Hollandais", "Hitarget", "ABC", "Premium", "Phoenix"],
     units: ["yards", "complet", "mètre"] as const,
-    defaultUnit: "complet"
+    defaultUnit: "mètre"
   },
   shweshwe: {
     name: "Shweshwe",
