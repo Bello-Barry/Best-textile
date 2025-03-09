@@ -93,6 +93,42 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://best-textile.vercel.app"),
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Store",
+  name: "Mbaka Textile",
+  image: "https://best-textile.vercel.app/logo.jpg",
+  description: "Boutique en ligne de tissus premium",
+  url: "https://best-textile.vercel.app",
+  telephone: "+242064767604",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "35rue mkbakas croisement mariam nguabi",
+    addressLocality: "Brazaville",
+    postalCode: "242",
+    addressCountry: "CG",
+  },
+  openingHoursSpecification: {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ],
+    opens: "08:00",
+    closes: "18:00",
+  },
+};
+
+// Dans votre layout
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+/>;
+
 export default function RootLayout({
   children,
 }: {
