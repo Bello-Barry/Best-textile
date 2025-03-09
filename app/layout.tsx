@@ -79,8 +79,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    shortcut: "/manifeste-d'application-web-512x512.png",
+    apple: "/manifeste-d'application-web-512x512.png",
   },
   manifest: "https://https://best-textile.vercel.app/site.webmanifest",
   themeColor: "#ffffff",
