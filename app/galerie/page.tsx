@@ -1,11 +1,10 @@
-// app/galerie/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabaseClient";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -27,6 +26,8 @@ export default function GalleryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const supabase = createClientComponentClient();
+
   // Charger les designs
   useEffect(() => {
     const loadDesigns = async () => {
@@ -47,7 +48,7 @@ export default function GalleryPage() {
     };
 
     loadDesigns();
-  }, []);
+  }, [supabase]);
 
   // Upload de fichier client
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,11 +63,14 @@ export default function GalleryPage() {
         throw new Error("Type de fichier non supporté");
       }
 
+      // Vérification de la taille du fichier
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Le fichier dépasse 5MB");
+      }
+
       // Génération d'un nom de fichier unique
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 9)}.${fileExt}`;
+      const fileName = `${Math.random().toString(36)}-${Date.now()}.${fileExt}`;
 
       // Upload vers Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -76,7 +80,10 @@ export default function GalleryPage() {
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Erreur lors de l'upload:", uploadError);
+        throw uploadError;
+      }
 
       // Construction de l'URL publique
       const { data: publicUrlData } = supabase.storage
@@ -95,7 +102,10 @@ export default function GalleryPage() {
         ])
         .select("*");
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Erreur lors de l'insertion en base de données:", dbError);
+        throw dbError;
+      }
 
       // Mettre à jour l'état local
       if (dbData?.[0]) {
@@ -106,7 +116,7 @@ export default function GalleryPage() {
       console.error("Erreur upload:", error);
       toast.error(
         `Échec de l'upload: ${
-          error instanceof Error ? error.message : "Erreur inconnue"
+          error instanceof Error ? error.message : JSON.stringify(error)
         }`
       );
     } finally {
