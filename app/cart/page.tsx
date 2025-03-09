@@ -106,7 +106,7 @@ export default function CartPage() {
                       <p className="text-sm text-muted-foreground">
                         {new Intl.NumberFormat('fr-FR', {
                           style: 'currency',
-                          currency: 'EUR'
+                                currency: 'XOF',
                         }).format(item.price)} / {item.metadata.unit}
                       </p>
                       
@@ -152,8 +152,8 @@ export default function CartPage() {
                     <div className="text-right font-semibold whitespace-nowrap">
                       {new Intl.NumberFormat('fr-FR', {
                         style: 'currency',
-                        currency: 'EUR'
-                      }).format(item.price * item.quantity)}
+                              currency: 'XOF',
+                      }).format(item.price * item.quantity).replace('XOF', 'FCFA');}
                     </div>
                   </motion.div>
                 ))}
