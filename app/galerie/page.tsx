@@ -230,8 +230,3 @@ export default function GalleryPage() {
     </div>
   );
 }
-Error: Erreur upload: {}
-    at createUnhandledError (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.0.3_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/console-error.js:23:19)
-    at handleClientError (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.0.3_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/use-error-handler.js:42:98)
-    at console.error (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.0.3_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/client/components/globals/intercept-console-error.js:53:56)
-    at handleUpload (webpack-internal:///(app-pages-browser)/./app/galerie/page.tsx:97:21)
