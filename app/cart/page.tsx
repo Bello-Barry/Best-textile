@@ -106,7 +106,7 @@ export default function CartPage() {
                       <p className="text-sm text-muted-foreground">
                         {new Intl.NumberFormat('fr-FR', {
                           style: 'currency',
-                                currency: 'XOF',
+                          currency: 'XOF',
                         }).format(item.price)} / {item.metadata.unit}
                       </p>
                       
@@ -152,8 +152,8 @@ export default function CartPage() {
                     <div className="text-right font-semibold whitespace-nowrap">
                       {new Intl.NumberFormat('fr-FR', {
                         style: 'currency',
-                              currency: 'XOF',
-                      }).format(item.price * item.quantity).replace('XOF', 'FCFA');}
+                        currency: 'XOF',
+                      }).format(item.price * item.quantity).replace('XOF', 'FCFA')}
                     </div>
                   </motion.div>
                 ))}
@@ -163,7 +163,7 @@ export default function CartPage() {
                     <span className="text-xl font-bold">
                       Total : {new Intl.NumberFormat('fr-FR', {
                         style: 'currency',
-                        currency: 'EUR'
+                        currency: 'XOF', // Utilisez 'XOF' au lieu de 'EUR'
                       }).format(calculateTotal())}
                     </span>
                     <Button 
@@ -181,4 +181,4 @@ export default function CartPage() {
       </Card>
     </div>
   );
-                    }
+}
