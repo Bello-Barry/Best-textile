@@ -4,10 +4,16 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Loader2, X } from "lucide-react";
 import { toast } from "react-toastify";
-import { Dialog } from "@headlessui/react";
 
 export interface FabricDesign {
   id: string;
@@ -26,10 +32,11 @@ export default function GalleryPage() {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     description: "",
     fabricType: "",
+    price: "",
     file: null as File | null,
   });
 
@@ -58,7 +65,7 @@ export default function GalleryPage() {
 
   const handleUpload = async () => {
     if (!formData.file || !formData.description || !formData.fabricType) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
@@ -77,22 +84,26 @@ export default function GalleryPage() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36)}-${Date.now()}.${fileExt}`;
 
+      // Upload fichier
       const { error: uploadError } = await supabase.storage
         .from("client_designs")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
+      // Récupération URL publique
       const { data: publicUrlData } = supabase.storage
         .from("client_designs")
         .getPublicUrl(fileName);
 
+      // Insertion dans la base
       const { data: dbData, error: dbError } = await supabase
         .from("fabric_designs")
         .insert([
           {
             image_url: publicUrlData?.publicUrl,
             description: formData.description,
+            price: Number(formData.price) || 0,
             metadata: { 
               fabricType: formData.fabricType,
               tags: [] 
@@ -106,8 +117,13 @@ export default function GalleryPage() {
       if (dbData?.[0]) {
         setDesigns(prev => [dbData[0], ...prev]);
         toast.success("Design uploadé avec succès !");
-        setShowModal(false);
-        setFormData({ description: "", fabricType: "", file: null });
+        setOpen(false);
+        setFormData({ 
+          description: "", 
+          fabricType: "", 
+          price: "",
+          file: null 
+        });
       }
     } catch (error) {
       console.error("Erreur upload:", error);
@@ -139,97 +155,100 @@ export default function GalleryPage() {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Modal */}
-      <Dialog
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        className="relative z-50"
-      >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      {/* Modal d'ajout */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button className="ml-2">
+            <span className="flex items-center gap-2">
+              📤 Ajouter mon modèle
+            </span>
+          </Button>
+        </DialogTrigger>
         
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6">
-            <div className="flex justify-between items-center mb-4">
-              <Dialog.Title className="text-xl font-bold">
-                Ajouter un nouveau design
-              </Dialog.Title>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Nouveau design</DialogTitle>
+            <button 
+              onClick={() => setOpen(false)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <Input
+              placeholder="Description *"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                description: e.target.value
+              }))}
+            />
 
-            <div className="space-y-4">
-              <Input
-                placeholder="Description du design"
-                value={formData.description}
+            <Input
+              placeholder="Type de tissu *"
+              value={formData.fabricType}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                fabricType: e.target.value
+              }))}
+            />
+
+            <Input
+              type="number"
+              placeholder="Prix (XOF)"
+              value={formData.price}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                price: e.target.value
+              }))}
+            />
+
+            <label className="block">
+              <span className="sr-only">Sélectionner une image</span>
+              <input
+                type="file"
+                accept="image/*"
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  description: e.target.value
+                  file: e.target.files?.[0] || null
                 }))}
+                className="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
               />
+            </label>
 
-              <Input
-                placeholder="Type de tissu (ex: Coton)"
-                value={formData.fabricType}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  fabricType: e.target.value
-                }))}
-              />
-
-              <label className="block">
-                <span className="sr-only">Choisir une image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    file: e.target.files?.[0] || null
-                  }))}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
-                />
-              </label>
-
-              <Button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="w-full"
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Uploader le design"
-                )}
-              </Button>
-            </div>
-          </Dialog.Panel>
-        </div>
+            <Button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="w-full"
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Publier le design"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
 
-      {/* Interface principale */}
+      {/* Barre de recherche et bouton */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <Input
-          placeholder="Rechercher par type (soie, coton...)"
+          placeholder="Rechercher par type ou description..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-xl"
         />
-
-        <Button onClick={() => setShowModal(true)}>
-          <span className="flex items-center gap-2">
-            📤 Ajouter mon modèle
-          </span>
-        </Button>
       </div>
 
+      {/* Grille des designs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {designs
           .filter(design =>
@@ -279,6 +298,7 @@ export default function GalleryPage() {
           ))}
       </div>
 
+      {/* Bouton de commande WhatsApp */}
       {selectedDesigns.length > 0 && (
         <div className="fixed bottom-6 right-6 animate-in fade-in zoom-in">
           <Button
@@ -286,7 +306,7 @@ export default function GalleryPage() {
             className="bg-green-600 hover:bg-green-700 shadow-lg px-6 py-4 rounded-full"
           >
             <span className="mr-2">💬</span>
-            Commander {selectedDesigns.length} modèle(s) sur WhatsApp
+            Commander {selectedDesigns.length} modèle(s)
           </Button>
         </div>
       )}
