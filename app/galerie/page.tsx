@@ -300,7 +300,7 @@ export default function GalleryPage() {
 
       {/* Bouton de commande WhatsApp */}
       {selectedDesigns.length > 0 && (
-        <div className="fixed bottom-6 right-6 animate-in fade-in zoom-in">
+  <div className="fixed bottom-6 right-6 z-50 animate-in fade-in zoom-in">
           <Button
             onClick={shareOnWhatsApp}
             className="bg-green-600 hover:bg-green-700 shadow-lg px-6 py-4 rounded-full"
