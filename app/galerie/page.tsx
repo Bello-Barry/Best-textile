@@ -132,9 +132,7 @@ export default function GalleryPage() {
       .join("\n")}\n\nMerci de me contacter pour confirmation.`;
 
     window.open(
-      `https://wa.me/${
-        process.env.NEXT_PUBLIC_WHATSAPP_NUMBER
-      }?text=${encodeURIComponent(message)}`,
+      `https://wa.me/+242064767604?text=${encodeURIComponent(message)}`,
       "_blank"
     );
   };
