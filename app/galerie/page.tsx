@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Loader2 } from "lucide-react";
-import { toast } from "react-toastify";
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export interface FabricDesign {
   id: string;
@@ -23,8 +23,10 @@ export default function GalleryPage() {
   const [designs, setDesigns] = useState<FabricDesign[]>([]);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
 
   const supabase = createClientComponentClient();
 
@@ -33,15 +35,15 @@ export default function GalleryPage() {
     const loadDesigns = async () => {
       try {
         const { data, error } = await supabase
-          .from("fabric_designs")
-          .select("*")
-          .order("created_at", { ascending: false });
+          .from('fabric_designs')
+          .select('*')
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         setDesigns(data || []);
       } catch (error) {
-        console.error("Erreur chargement:", error);
-        toast.error("Erreur lors du chargement des designs");
+        console.error('Erreur chargement:', error);
+        toast.error('Erreur lors du chargement des designs');
       } finally {
         setLoading(false);
       }
@@ -53,67 +55,70 @@ export default function GalleryPage() {
   // Upload de fichier client
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !title || !description) {
+      toast.error('Veuillez remplir tous les champs');
+      return;
+    }
 
     setUploading(true);
 
     try {
       // Vérification du type de fichier
-      if (!file.type.startsWith("image/")) {
-        throw new Error("Type de fichier non supporté");
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Type de fichier non supporté');
       }
 
       // Vérification de la taille du fichier
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error("Le fichier dépasse 5MB");
+        throw new Error('Le fichier dépasse 5MB');
       }
 
       // Génération d'un nom de fichier unique
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36)}-${Date.now()}.${fileExt}`;
 
       // Upload vers Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("client_designs")
+        .from('client_designs')
         .upload(fileName, file, {
-          cacheControl: "3600",
+          cacheControl: '3600',
           upsert: false,
         });
 
       if (uploadError) {
-        console.error("Erreur lors de l'upload:", uploadError);
+        console.error('Erreur lors de l'upload:', uploadError);
         throw uploadError;
       }
 
       // Construction de l'URL publique
       const { data: publicUrlData } = supabase.storage
-        .from("client_designs")
+        .from('client_designs')
         .getPublicUrl(fileName);
 
       // Ajouter à la base de données
       const { data: dbData, error: dbError } = await supabase
-        .from("fabric_designs")
+        .from('fabric_designs')
         .insert([
           {
-            image_url: publicUrlData?.publicUrl || "",
-            description: "Design client",
-            metadata: { fabricType: "client", tags: [] },
+            image_url: publicUrlData?.publicUrl || '',
+            description: description,
+            metadata: { fabricType: title, tags: [] },
           },
         ])
-        .select("*");
+        .select('*');
 
       if (dbError) {
-        console.error("Erreur lors de l'insertion en base de données:", dbError);
+        console.error('Erreur lors de l'insertion en base de données:', dbError);
         throw dbError;
       }
 
       // Mettre à jour l'état local
       if (dbData?.[0]) {
         setDesigns((prev) => [dbData[0], ...prev]);
-        toast.success("Design uploadé avec succès !");
+        toast.success('Design uploadé avec succès !');
       }
     } catch (error) {
-      console.error("Erreur upload:", error);
+      console.error('Erreur upload:', error);
       toast.error(
         `Échec de l'upload: ${
           error instanceof Error ? error.message : JSON.stringify(error)
@@ -129,11 +134,11 @@ export default function GalleryPage() {
     const selected = designs.filter((d) => selectedDesigns.includes(d.id));
     const message = `Bonjour! Je suis intéressé par ces modèles :\n\n${selected
       .map((d) => `- ${d.description} (${d.price.toFixed(2)} XOF)`)
-      .join("\n")}\n\nMerci de me contacter pour confirmation.`;
+      .join('\n')}\n\nMerci de me contacter pour confirmation.`;
 
     window.open(
       `https://wa.me/+242064767604?text=${encodeURIComponent(message)}`,
-      "_blank"
+      '_blank'
     );
   };
 
@@ -149,12 +154,17 @@ export default function GalleryPage() {
     <div className="container mx-auto p-4">
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <Input
-          placeholder="Rechercher par type (soie, coton...)"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Titre du modèle"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           className="max-w-xl"
         />
-
+        <Input
+          placeholder="Description du modèle"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="max-w-xl"
+        />
         <label className="cursor-pointer border p-2 rounded-lg bg-white hover:bg-gray-50 transition-colors">
           <span className="flex items-center gap-2">
             {uploading ? (
