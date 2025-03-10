@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Loader2, X } from "lucide-react";
+import { toast } from "react-toastify";
+import { Dialog } from "@headlessui/react";
 
 export interface FabricDesign {
   id: string;
@@ -23,27 +24,30 @@ export default function GalleryPage() {
   const [designs, setDesigns] = useState<FabricDesign[]>([]);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    description: "",
+    fabricType: "",
+    file: null as File | null,
+  });
 
   const supabase = createClientComponentClient();
 
-  // Charger les designs
   useEffect(() => {
     const loadDesigns = async () => {
       try {
         const { data, error } = await supabase
-          .from('fabric_designs')
-          .select('*')
-          .order('created_at', { ascending: false });
+          .from("fabric_designs")
+          .select("*")
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
         setDesigns(data || []);
       } catch (error) {
-        console.error('Erreur chargement:', error);
-        toast.error('Erreur lors du chargement des designs');
+        console.error("Erreur chargement:", error);
+        toast.error("Erreur lors du chargement des designs");
       } finally {
         setLoading(false);
       }
@@ -52,93 +56,76 @@ export default function GalleryPage() {
     loadDesigns();
   }, [supabase]);
 
-  // Upload de fichier client
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !title || !description) {
-      toast.error('Veuillez remplir tous les champs');
+  const handleUpload = async () => {
+    if (!formData.file || !formData.description || !formData.fabricType) {
+      toast.error("Veuillez remplir tous les champs");
       return;
     }
 
     setUploading(true);
 
     try {
-      // Vérification du type de fichier
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Type de fichier non supporté');
+      const file = formData.file;
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Type de fichier non supporté");
       }
 
-      // Vérification de la taille du fichier
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Le fichier dépasse 5MB');
+        throw new Error("Le fichier dépasse 5MB");
       }
 
-      // Génération d'un nom de fichier unique
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36)}-${Date.now()}.${fileExt}`;
 
-      // Upload vers Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('client_designs')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      const { error: uploadError } = await supabase.storage
+        .from("client_designs")
+        .upload(fileName, file);
 
-      if (uploadError) {
-        console.error('Erreur lors de l'upload:', uploadError);
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      // Construction de l'URL publique
       const { data: publicUrlData } = supabase.storage
-        .from('client_designs')
+        .from("client_designs")
         .getPublicUrl(fileName);
 
-      // Ajouter à la base de données
       const { data: dbData, error: dbError } = await supabase
-        .from('fabric_designs')
+        .from("fabric_designs")
         .insert([
           {
-            image_url: publicUrlData?.publicUrl || '',
-            description: description,
-            metadata: { fabricType: title, tags: [] },
-          },
+            image_url: publicUrlData?.publicUrl,
+            description: formData.description,
+            metadata: { 
+              fabricType: formData.fabricType,
+              tags: [] 
+            },
+          }
         ])
-        .select('*');
+        .select("*");
 
-      if (dbError) {
-        console.error('Erreur lors de l'insertion en base de données:', dbError);
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
-      // Mettre à jour l'état local
       if (dbData?.[0]) {
-        setDesigns((prev) => [dbData[0], ...prev]);
-        toast.success('Design uploadé avec succès !');
+        setDesigns(prev => [dbData[0], ...prev]);
+        toast.success("Design uploadé avec succès !");
+        setShowModal(false);
+        setFormData({ description: "", fabricType: "", file: null });
       }
     } catch (error) {
-      console.error('Erreur upload:', error);
-      toast.error(
-        `Échec de l'upload: ${
-          error instanceof Error ? error.message : JSON.stringify(error)
-        }`
-      );
+      console.error("Erreur upload:", error);
+      toast.error(`Échec de l'upload: ${error instanceof Error ? error.message : "Erreur inconnue"}`);
     } finally {
       setUploading(false);
     }
   };
 
-  // Partage WhatsApp
   const shareOnWhatsApp = () => {
-    const selected = designs.filter((d) => selectedDesigns.includes(d.id));
+    const selected = designs.filter(d => selectedDesigns.includes(d.id));
     const message = `Bonjour! Je suis intéressé par ces modèles :\n\n${selected
-      .map((d) => `- ${d.description} (${d.price.toFixed(2)} XOF)`)
-      .join('\n')}\n\nMerci de me contacter pour confirmation.`;
+      .map(d => `- ${d.description} (${d.price.toFixed(2)} XOF)`)
+      .join("\n")}\n\nMerci de me contacter pour confirmation.`;
 
     window.open(
       `https://wa.me/+242064767604?text=${encodeURIComponent(message)}`,
-      '_blank'
+      "_blank"
     );
   };
 
@@ -152,49 +139,104 @@ export default function GalleryPage() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* Modal */}
+      <Dialog
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6">
+            <div className="flex justify-between items-center mb-4">
+              <Dialog.Title className="text-xl font-bold">
+                Ajouter un nouveau design
+              </Dialog.Title>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <Input
+                placeholder="Description du design"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  description: e.target.value
+                }))}
+              />
+
+              <Input
+                placeholder="Type de tissu (ex: Coton)"
+                value={formData.fabricType}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  fabricType: e.target.value
+                }))}
+              />
+
+              <label className="block">
+                <span className="sr-only">Choisir une image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    file: e.target.files?.[0] || null
+                  }))}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+              </label>
+
+              <Button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Uploader le design"
+                )}
+              </Button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Interface principale */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <Input
-          placeholder="Titre du modèle"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Rechercher par type (soie, coton...)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-xl"
         />
-        <Input
-          placeholder="Description du modèle"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="max-w-xl"
-        />
-        <label className="cursor-pointer border p-2 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+
+        <Button onClick={() => setShowModal(true)}>
           <span className="flex items-center gap-2">
-            {uploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "📤 Ajouter mon modèle"
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              disabled={uploading}
-              className="hidden"
-            />
+            📤 Ajouter mon modèle
           </span>
-        </label>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {designs
-          .filter(
-            (design) =>
-              design.metadata.fabricType
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              design.description
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
+          .filter(design =>
+            design.metadata.fabricType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            design.description.toLowerCase().includes(searchTerm.toLowerCase())
           )
-          .map((design) => (
+          .map(design => (
             <div
               key={design.id}
               className={`relative group cursor-pointer border rounded-lg overflow-hidden transition-transform ${
@@ -203,9 +245,9 @@ export default function GalleryPage() {
                   : "hover:scale-105"
               }`}
               onClick={() => {
-                setSelectedDesigns((prev) =>
+                setSelectedDesigns(prev =>
                   prev.includes(design.id)
-                    ? prev.filter((id) => id !== design.id)
+                    ? prev.filter(id => id !== design.id)
                     : [...prev, design.id]
                 );
               }}
@@ -223,6 +265,9 @@ export default function GalleryPage() {
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
                 <p className="text-white font-medium truncate">
                   {design.metadata.fabricType}
+                </p>
+                <p className="text-white text-sm truncate">
+                  {design.description}
                 </p>
                 {design.price > 0 && (
                   <p className="text-white text-sm">
