@@ -19,7 +19,7 @@ export interface FabricDesign {
   id: string;
   image_url: string;
   description: string;
-  price: number;
+  price: number | null; // Modification pour accepter null
   metadata: {
     fabricType: string;
     tags: string[];
@@ -31,7 +31,6 @@ export default function GalleryPage() {
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [zoomedImage, setZoomedImage] = useState<FabricDesign | null>(null);
   
   const supabase = createClientComponentClient();
 
@@ -44,7 +43,10 @@ export default function GalleryPage() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setDesigns(data || []);
+        setDesigns(data?.map(d => ({ 
+          ...d, 
+          price: d.price || 0 // Conversion des null en 0
+        })) || []);
       } catch (error) {
         toast.error("Erreur lors du chargement des designs");
       } finally {
@@ -57,7 +59,7 @@ export default function GalleryPage() {
   const shareOnWhatsApp = () => {
     const selected = designs.filter(d => selectedDesigns.includes(d.id));
     const message = `Bonjour! Je suis intéressé par ces modèles :\n\n${selected
-      .map(d => `- ${d.metadata.fabricType}: ${d.description} (${d.price.toFixed(2)} XOF)\n  ${d.image_url}`)
+      .map(d => `- ${d.metadata.fabricType}: ${d.description} (${(d.price ?? 0).toFixed(2)} XOF)\n  ${d.image_url}`)
       .join("\n\n")}`;
     
     window.open(`https://wa.me/+242064767604?text=${encodeURIComponent(message)}`, "_blank");
@@ -139,10 +141,10 @@ export default function GalleryPage() {
                       <p className="text-sm">{design.description}</p>
                       <div className="flex justify-between items-center mt-2">
                         <Badge variant="secondary">
-                          {design.price.toFixed(2)} XOF
+                          {(design.price ?? 0).toFixed(2)} XOF
                         </Badge>
                         <Badge variant="outline">
-                          {design.metadata.tags.join(", ")}
+                          {design.metadata.tags?.join(", ") || "Aucun tag"}
                         </Badge>
                       </div>
                     </div>
@@ -156,10 +158,10 @@ export default function GalleryPage() {
                 <p className="text-sm text-muted-foreground truncate">{design.description}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold">
-                    {design.price.toFixed(2)} XOF
+                    {(design.price ?? 0).toFixed(2)} XOF
                   </span>
                   <Badge variant="outline" className="text-xs">
-                    {design.metadata.tags[0]}
+                    {design.metadata.tags?.[0] || "N/A"}
                   </Badge>
                 </div>
               </div>
@@ -168,7 +170,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Bouton de commande flottant */}
-        {selectedDesigns.length > 0 && (
+      {selectedDesigns.length > 0 && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
