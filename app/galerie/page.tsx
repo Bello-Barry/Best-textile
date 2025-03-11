@@ -86,19 +86,16 @@ export default function GalleryPage() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36)}-${Date.now()}.${fileExt}`;
 
-      // Upload fichier
       const { error: uploadError } = await supabase.storage
         .from("client_designs")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Récupération URL publique
       const { data: publicUrlData } = supabase.storage
         .from("client_designs")
         .getPublicUrl(fileName);
 
-      // Insertion dans la base
       const { data: dbData, error: dbError } = await supabase
         .from("fabric_designs")
         .insert([
@@ -137,31 +134,20 @@ export default function GalleryPage() {
 
   const shareOnWhatsApp = () => {
     const selected = designs.filter(d => selectedDesigns.includes(d.id));
-    
-    // Créer un message avec les informations et les liens vers les images
     const message = `Bonjour! Je suis intéressé par ces modèles :\n\n${selected
       .map(d => {
-        // Ajouter les détails de chaque tissu avec son lien
         return `- ${d.metadata.fabricType}: ${d.description} (${d.price.toFixed(2)} XOF)\n  ${d.image_url}`;
       })
       .join("\n\n")}\n\nMerci de me contacter pour confirmation.`;
 
-    // Ouvrir WhatsApp avec le message
     window.open(
       `https://wa.me/+242064767604?text=${encodeURIComponent(message)}`,
       "_blank"
     );
   };
 
-  const handleImageClick = (e: React.MouseEvent, design: FabricDesign) => {
-    e.stopPropagation(); // Empêcher la sélection du design lors du clic sur l'icône de zoom
-    setZoomedImage(design);
-    setZoomDialogOpen(true);
-  };
-  
-  // Nouvelle fonction pour ouvrir directement l'image en plein écran
   const handleFullImageView = (e: React.MouseEvent, design: FabricDesign) => {
-    e.stopPropagation(); // Empêcher la sélection du design lors du clic
+    e.stopPropagation();
     setZoomedImage(design);
     setZoomDialogOpen(true);
   };
@@ -176,7 +162,6 @@ export default function GalleryPage() {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Modal d'ajout */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button className="ml-2">
@@ -259,7 +244,6 @@ export default function GalleryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de zoom */}
       <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
         <DialogContent className="sm:max-w-[80vw] md:max-w-[70vw] lg:max-w-[60vw] max-h-[90vh]">
           <DialogHeader>
@@ -293,7 +277,6 @@ export default function GalleryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Barre de recherche et bouton */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <Input
           placeholder="Rechercher par type ou description..."
@@ -303,7 +286,6 @@ export default function GalleryPage() {
         />
       </div>
 
-      {/* Grille des designs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {designs
           .filter(design =>
@@ -326,23 +308,17 @@ export default function GalleryPage() {
                 );
               }}
             >
-              <div className="relative aspect-square">
+              <div 
+                className="relative aspect-square cursor-zoom-in"
+                onClick={(e) => handleFullImageView(e, design)}
+              >
                 <Image
                   src={design.image_url}
                   alt={design.description}
                   fill
-                  className="object-cover cursor-zoom-in"
+                  className="object-cover"
                   sizes="(max-width: 768px) 50vw, 25vw"
-                  onClick={(e) => handleFullImageView(e, design)}
                 />
-                
-                {/* Bouton de zoom */}
-                <button 
-                  className="absolute top-2 right-2 p-1 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => handleImageClick(e, design)}
-                >
-                  <ZoomIn className="h-5 w-5 text-blue-600" />
-                </button>
               </div>
 
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
@@ -362,7 +338,6 @@ export default function GalleryPage() {
           ))}
       </div>
 
-      {/* Bouton de commande WhatsApp */}
       {selectedDesigns.length > 0 && (
         <div className="fixed bottom-6 right-6 z-40 animate-in fade-in zoom-in">
           <Button
