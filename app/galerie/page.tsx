@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Loader2, X, ZoomIn } from "lucide-react";
+import { Loader2, ZoomIn, ShoppingCart } from "lucide-react";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -169,7 +168,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Bouton de commande flottant */}
-      {selectedDesigns.length > 0 && (
+        {selectedDesigns.length > 0 && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
