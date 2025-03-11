@@ -146,7 +146,7 @@ export default function GalleryPage() {
     );
   };
 
-  const handleFullImageView = (e: React.MouseEvent, design: FabricDesign) => {
+  const handleImageClick = (e: React.MouseEvent, design: FabricDesign) => {
     e.stopPropagation();
     setZoomedImage(design);
     setZoomDialogOpen(true);
@@ -293,12 +293,14 @@ export default function GalleryPage() {
             design.description.toLowerCase().includes(searchTerm.toLowerCase())
           )
           .map(design => (
-            <div
+            <motion.div
               key={design.id}
-              className={`relative group cursor-pointer border rounded-lg overflow-hidden transition-transform ${
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`relative group cursor-pointer border rounded-lg overflow-hidden transition-shadow ${
                 selectedDesigns.includes(design.id)
-                  ? "ring-4 ring-blue-500 scale-95"
-                  : "hover:scale-105"
+                  ? "ring-4 ring-blue-500"
+                  : "hover:shadow-lg"
               }`}
               onClick={() => {
                 setSelectedDesigns(prev =>
@@ -308,33 +310,52 @@ export default function GalleryPage() {
                 );
               }}
             >
-              <div 
-                className="relative aspect-square cursor-zoom-in"
-                onClick={(e) => handleFullImageView(e, design)}
-              >
-                <Image
-                  src={design.image_url}
-                  alt={design.description}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                />
-              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div 
+                    className="relative aspect-square cursor-zoom-in"
+                    onClick={(e) => handleImageClick(e, design)}
+                  >
+                    <Image
+                      src={design.image_url}
+                      alt={design.description}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                    />
+                  </div>
+                </DialogTrigger>
 
-              <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                <p className="text-white font-medium truncate">
-                  {design.metadata.fabricType}
-                </p>
-                <p className="text-white text-sm truncate">
-                  {design.description}
-                </p>
-                {design.price > 0 && (
-                  <p className="text-white text-sm font-bold">
+                <DialogContent className="max-w-4xl p-0 overflow-hidden">
+                  <div className="relative h-[80vh]">
+                    <Image
+                      src={design.image_url}
+                      alt={design.description}
+                      fill
+                      className="object-contain"
+                    />
+                    <div className="absolute bottom-4 left-4 bg-black/70 p-2 rounded-lg text-white">
+                      <p className="font-medium">{design.metadata.fabricType}</p>
+                      <p>{design.description}</p>
+                      <p className="font-bold">{design.price.toFixed(2)} XOF</p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <div className="p-3 space-y-1">
+                <h3 className="font-semibold truncate">{design.metadata.fabricType}</h3>
+                <p className="text-sm text-muted-foreground truncate">{design.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-primary">
                     {design.price.toFixed(2)} XOF
-                  </p>
-                )}
+                  </span>
+                  <Badge variant="outline" className="capitalize">
+                    {design.metadata.tags.join(', ')}
+                  </Badge>
+                </div>
               </div>
-            </div>
+            </motion.div>
           ))}
       </div>
 
