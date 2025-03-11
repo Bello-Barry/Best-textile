@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Loader2, ZoomIn, ShoppingCart, X} from "lucide-react";
+import {Loader2, ZoomIn, ShoppingCart, X} from "lucide-react";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
