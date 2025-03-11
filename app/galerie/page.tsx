@@ -158,6 +158,13 @@ export default function GalleryPage() {
     setZoomedImage(design);
     setZoomDialogOpen(true);
   };
+  
+  // Nouvelle fonction pour ouvrir directement l'image en plein écran
+  const handleFullImageView = (e: React.MouseEvent, design: FabricDesign) => {
+    e.stopPropagation(); // Empêcher la sélection du design lors du clic
+    setZoomedImage(design);
+    setZoomDialogOpen(true);
+  };
 
   if (loading) {
     return (
@@ -324,8 +331,9 @@ export default function GalleryPage() {
                   src={design.image_url}
                   alt={design.description}
                   fill
-                  className="object-cover"
+                  className="object-cover cursor-zoom-in"
                   sizes="(max-width: 768px) 50vw, 25vw"
+                  onClick={(e) => handleFullImageView(e, design)}
                 />
                 
                 {/* Bouton de zoom */}
