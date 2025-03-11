@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, ZoomIn } from "lucide-react";
 import { toast } from "react-toastify";
 
 export interface FabricDesign {
@@ -33,6 +33,8 @@ export default function GalleryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<FabricDesign | null>(null);
   const [formData, setFormData] = useState({
     description: "",
     fabricType: "",
@@ -135,14 +137,26 @@ export default function GalleryPage() {
 
   const shareOnWhatsApp = () => {
     const selected = designs.filter(d => selectedDesigns.includes(d.id));
+    
+    // Créer un message avec les informations et les liens vers les images
     const message = `Bonjour! Je suis intéressé par ces modèles :\n\n${selected
-      .map(d => `- ${d.description} (${d.price.toFixed(2)} XOF)`)
-      .join("\n")}\n\nMerci de me contacter pour confirmation.`;
+      .map(d => {
+        // Ajouter les détails de chaque tissu avec son lien
+        return `- ${d.metadata.fabricType}: ${d.description} (${d.price.toFixed(2)} XOF)\n  ${d.image_url}`;
+      })
+      .join("\n\n")}\n\nMerci de me contacter pour confirmation.`;
 
+    // Ouvrir WhatsApp avec le message
     window.open(
       `https://wa.me/+242064767604?text=${encodeURIComponent(message)}`,
       "_blank"
     );
+  };
+
+  const handleImageClick = (e, design) => {
+    e.stopPropagation(); // Empêcher la sélection du design lors du clic sur l'icône de zoom
+    setZoomedImage(design);
+    setZoomDialogOpen(true);
   };
 
   if (loading) {
@@ -238,6 +252,40 @@ export default function GalleryPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de zoom */}
+      <Dialog open={zoomDialogOpen} onOpenChange={setZoomDialogOpen}>
+        <DialogContent className="sm:max-w-[80vw] md:max-w-[70vw] lg:max-w-[60vw] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{zoomedImage?.metadata.fabricType} - {zoomedImage?.description}</DialogTitle>
+            <button 
+              onClick={() => setZoomDialogOpen(false)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </DialogHeader>
+          
+          {zoomedImage && (
+            <div className="relative h-full max-h-[70vh] w-full flex justify-center">
+              <div className="relative w-full h-full">
+                <Image
+                  src={zoomedImage.image_url}
+                  alt={zoomedImage.description}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 90vw, 70vw"
+                />
+              </div>
+              <div className="absolute bottom-4 left-4 bg-black/70 p-2 rounded-lg text-white">
+                <p className="font-medium">{zoomedImage.metadata.fabricType}</p>
+                <p>{zoomedImage.description}</p>
+                <p className="font-bold">{zoomedImage.price.toFixed(2)} XOF</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Barre de recherche et bouton */}
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
         <Input
@@ -279,6 +327,14 @@ export default function GalleryPage() {
                   className="object-cover"
                   sizes="(max-width: 768px) 50vw, 25vw"
                 />
+                
+                {/* Bouton de zoom */}
+                <button 
+                  className="absolute top-2 right-2 p-1 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => handleImageClick(e, design)}
+                >
+                  <ZoomIn className="h-5 w-5 text-blue-600" />
+                </button>
               </div>
 
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
@@ -289,7 +345,7 @@ export default function GalleryPage() {
                   {design.description}
                 </p>
                 {design.price > 0 && (
-                  <p className="text-white text-sm">
+                  <p className="text-white text-sm font-bold">
                     {design.price.toFixed(2)} XOF
                   </p>
                 )}
@@ -300,7 +356,7 @@ export default function GalleryPage() {
 
       {/* Bouton de commande WhatsApp */}
       {selectedDesigns.length > 0 && (
-  <div className="fixed bottom-6 right-6 z-50 animate-in fade-in zoom-in">
+        <div className="fixed bottom-6 right-6 z-40 animate-in fade-in zoom-in">
           <Button
             onClick={shareOnWhatsApp}
             className="bg-green-600 hover:bg-green-700 shadow-lg px-6 py-4 rounded-full"
