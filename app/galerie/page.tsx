@@ -153,7 +153,7 @@ export default function GalleryPage() {
     );
   };
 
-  const handleImageClick = (e, design) => {
+  const handleImageClick = (e: React.MouseEvent, design: FabricDesign) => {
     e.stopPropagation(); // Empêcher la sélection du design lors du clic sur l'icône de zoom
     setZoomedImage(design);
     setZoomDialogOpen(true);
