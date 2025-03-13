@@ -136,6 +136,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+<head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="48x48" type="image/png" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="72x72" type="image/png" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="96x96" type="image/png" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="144x144" type="image/png" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="192x192" type="image/png" />
+        <link rel="icon" href="/web-app-manifest-512x512.png" sizes="512x512" type="image/png" />
+        <title>Mbaka Textile</title>
+      </head> 
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
