@@ -32,6 +32,7 @@ export default function GalleryPage() {
   const [designs, setDesigns] = useState<FabricDesign[]>([]);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
