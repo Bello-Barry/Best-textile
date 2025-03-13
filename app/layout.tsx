@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "Mbaka Textile",
     images: [
       {
-        url: "https://best-textile.vercel.app/manifeste-d'application-web-512x512.png",
+        url: "https://best-textile.vercel.app/web-app-manifest-512x512.png",
         width: 1200,
         height: 630,
         alt: "Mbaka Textile - Sélection de tissus",
@@ -79,8 +79,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
-    shortcut: "/manifeste-d'application-web-512x512.png",
-    apple: "/manifeste-d'application-web-512x512.png",
+    shortcut: "/web-app-manifest-512x512.png",
+    apple: "/web-app-manifest-512x512.png",
   },
   manifest: "https://https://best-textile.vercel.app/site.webmanifest",
   themeColor: "#ffffff",
