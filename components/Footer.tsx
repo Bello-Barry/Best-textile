@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
 import { useAuthStore } from '@/store/authStore';
-import { Home, ShoppingBag, User, Settings } from 'lucide-react';
+import { Home, ShoppingBag, User, Settings, GalleryVertical } from 'lucide-react'; // Ajout de GalleryVertical
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
@@ -20,6 +20,12 @@ const DynamicFooter = () => {
       name: 'Accueil',
       href: '/',
       icon: Home,
+    },
+    // Ajout de la nouvelle entrée Galerie
+    {
+      name: 'Galerie',
+      href: '/galerie',
+      icon: GalleryVertical,
     },
     {
       name: 'Commandes',
