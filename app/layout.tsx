@@ -78,11 +78,13 @@ export const metadata: Metadata = {
     yandex: "your-yandex-verification-code",
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/web-app-manifest-512x512.png",
-    apple: "/web-app-manifest-512x512.png",
-  },
-  manifest: "https://https://best-textile.vercel.app/site.webmanifest",
+    icon: [
+      { url: '/favicon.ico' },       // Pour les navigateurs desktop
+      { url: '/icon.png', sizes: '512x512' } // Pour PWA
+    ],
+    apple: '/apple-touch-icon.png'   // Pour iOS
+  }, 
+manifest: "https://https://best-textile.vercel.app/site.webmanifest",
   themeColor: "#ffffff",
   authors: [
     {
