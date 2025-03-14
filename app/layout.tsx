@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-touch-icon.png'   // Pour iOS
   }, 
-manifest: "https://https://best-textile.vercel.app/site.webmanifest",
+
   themeColor: "#ffffff",
   authors: [
     {
