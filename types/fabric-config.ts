@@ -128,7 +128,7 @@ export const FABRIC_CONFIG = {
   },
   Dentelle: {
     name: "Dentelle",
-    subtypes: ["cérémoniev16", "v10", "uni", "guipure", "Olowu"],
+    subtypes: ["cérémoniev16", "v10", "uni", "guipure", "coton"],
     units: [ "mètre"] as const,
     defaultUnit: "mètre"
   }
