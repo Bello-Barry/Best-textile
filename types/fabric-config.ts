@@ -40,7 +40,7 @@ export const FABRIC_CONFIG = {
   },
   velours: {
     name: "Velours",
-    subtypes: ["Côtelé", "Cisélé", "Millefleurs", "De soie"],
+    subtypes: ["Côtelé", "Cisélé", "De soie"],
     units: ["mètre"] as const,
     defaultUnit: "mètre"
   },
