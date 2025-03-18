@@ -181,12 +181,12 @@ export default function ProfilePage() {
             {order.items.map((item, index) => (
               <div key={index} className="flex justify-between py-1">
                 <span>{item.name}</span>
-                <span>{item.quantity}x {item.price}€</span>
+                <span>{item.quantity}x {item.price}Fcfa</span>
               </div>
             ))}
           </ScrollArea>
         </div>
-        <p className="mt-2 text-right font-bold">{order.total_amount.toFixed(2)}€</p>
+        <p className="mt-2 text-right font-bold">{order.total_amount.toFixed(2)}Fcfa</p>
       </CardContent>
     </Card>
   );
