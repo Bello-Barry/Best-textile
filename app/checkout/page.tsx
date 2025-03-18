@@ -77,9 +77,9 @@ export default function CheckoutPage() {
         `Nom: ${formData.name}\n` +
         `Adresse: ${formData.address}\n` +
         `Téléphone: ${formData.phone}\n` +
-        `Total: ${total.toFixed(2)}€`
+        `Total: ${total.toFixed(2)}Fcfa`
       );
-      window.location.href = `https://wa.me/+242065835337?text=${whatsappMessage}`;
+      window.location.href = `https://wa.me/+242064767604?text=${whatsappMessage}`;
 
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la commande");
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
                     Traitement...
                   </>
                 ) : (
-                  `Confirmer la commande (${total.toFixed(2)}€)`
+                  `Confirmer la commande (${total.toFixed(2)}Fcfa)`
                 )}
               </Button>
             </form>
