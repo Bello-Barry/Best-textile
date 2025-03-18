@@ -92,7 +92,7 @@ function OrderDetails() {
             <span className="capitalize">{order.status}</span>
           </p>
           <p>
-            <span className="font-medium">Total:</span> {order.total_amount} €
+            <span className="font-medium">Total:</span> {order.total_amount} FCfa
           </p>
           <p>
             <span className="font-medium">Date de commande:</span>{" "}
